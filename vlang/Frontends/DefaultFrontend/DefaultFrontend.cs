@@ -118,12 +118,9 @@ namespace VLang.Frontends
             Cast,
             Operator,
             AnonymousFunction,
-            NamedFunction
-        }
-
-        private enum Keywords
-        {
-            Using, New, If, Else, While, For, Loop, Foreach
+            NamedFunction,
+            If,
+            IfWithElse
         }
 
         public override ASTNode Parse()
@@ -146,7 +143,7 @@ namespace VLang.Frontends
                     num++;
                     Groups.Add(num, new DefaultFrontend(Script.Substring(start + 1, i - start - 1)).Parse());
                     Script = Script.Remove(start, i - start + 1);
-                    bool embedded = start < Script.Length ? Script[start] == ')' : false;
+                    bool embedded = start < Script.Length ? Script[start] == ')' || Script.Substring(start, 5).Trim().StartsWith("else") : false;
                     string name = "_reserved_codegroup_" + num.ToString() + (embedded ? "" : ";");
                     i = start + name.Length - 1;
                     Script = Script.Insert(start, name);
@@ -158,6 +155,13 @@ namespace VLang.Frontends
                 Groups.Remove(Groups.ElementAt(t).Key);
                 Groups.Add(inserter.Key, inserter.Value);
                 t++;
+            }
+            foreach (var elem in StringValues)
+            {
+                root.Add(new Assignment(new Name(elem.Key), new Expression(new List<IASTElement>
+                {
+                    new Value(elem.Value)
+                })));
             }
             List<ASTNode> tokens = new List<ASTNode>();
             StringBuilder buffer = new StringBuilder();
@@ -189,7 +193,7 @@ namespace VLang.Frontends
             // i dont know if it will work. but it should anyway it should get back in there stipped
             // with : by formatexpression
             //if (Flatten(NormalizeBraces(exp)).Contains(":")) return new string[] { exp };
-            if (Flatten(NormalizeBraces(exp)).Contains("="))
+            if (Flatten(NormalizeBraces(exp)).Contains("=") && !Flatten(NormalizeBraces(exp)).Contains("=="))
             {
                 return CreateExpression(new string[] { exp });
             }
@@ -401,6 +405,26 @@ namespace VLang.Frontends
                             list.Add(new FunctionDefinition(name, arguments, Groups[groupId]));
                         }
                         break;
+
+                    case ElementType.If:
+                        {
+                            Expression expr = ToRPN(CutExpression(element).Trim());
+                            string sub = Flatten(element);
+                            int groupId1 = int.Parse(sub.Trim().Replace("if_reserved_codegroup_", ""));
+                            list.Add(new Conditional(expr, Groups[groupId1]));
+                        }
+                        break;
+
+                    case ElementType.IfWithElse:
+                        {
+                            string exp = CutExpression(element);
+                            Expression expr = ToRPN(exp.Trim());
+                            string[] sub = Flatten(element).Split(new string[] { "else" }, 2, StringSplitOptions.RemoveEmptyEntries);
+                            int groupId1 = int.Parse(sub[0].Trim().Replace("if_reserved_codegroup_", ""));
+                            int groupId2 = int.Parse(sub[1].Trim().Replace("_reserved_codegroup_", ""));
+                            list.Add(new Conditional(expr, Groups[groupId1], Groups[groupId2]));
+                        }
+                        break;
                 }
             }
             return new Expression(list);
@@ -433,11 +457,6 @@ namespace VLang.Frontends
             return output;
         }
 
-        private Int32 ExtractGroupIdent(string stuff)
-        {
-            return Int32.Parse(stuff.Substring(4));
-        }
-
         private String Flatten(String input, Int64 level = 0)
         {
             String ret = "";
@@ -466,33 +485,6 @@ namespace VLang.Frontends
                 iter++;
             }
             return ret;
-        }
-
-        private string[] GammaSplit(String str, char sep)
-        {
-            if (!str.Contains('(')) return str.Split(sep);
-            Int32 bracelevel = 0, iter = 0;
-            List<Int32> indexes = new List<Int32>();
-            indexes.Add(0);
-            while (iter < str.Length)
-            {
-                if (str[iter] == '(') bracelevel++;
-                else if (str[iter] == ')') bracelevel--;
-                else if (bracelevel == 0 && str[iter] == sep) indexes.Add(iter);
-                ++iter;
-            }
-            indexes.Add(str.Length);
-            List<String> ret = new List<String>();
-            for (iter = 1; iter < indexes.Count; iter++)
-            {
-                ret.Add(
-                    str.Substring(
-                        indexes[iter - 1],
-                        indexes[iter] - indexes[iter - 1]
-                    ).TrimEnd(new char[] { sep }).TrimStart(new char[] { sep })
-                );
-            }
-            return ret.ToArray();
         }
 
         private string[] GammaSplitOne(String str, char sep)
@@ -530,8 +522,10 @@ namespace VLang.Frontends
             else if (Regex.IsMatch(element, @"^([^=]+)(=)([^=]+)$") == true) return ElementType.Assignment;
             else if (operators.Keys.Contains(element)) return ElementType.Operator;
             else if (Regex.IsMatch(element, @"[\(\)]") == false) return ElementType.Variable;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^if\(\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.If;
             else if (Regex.IsMatch(element.Replace(" ", ""), @".+\(\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.NamedFunction;
             else if (Regex.IsMatch(element.Replace(" ", ""), @"\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.AnonymousFunction;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^if\(\)_reserved_codegroup_([0-9]+)else_reserved_codegroup_([0-9]+)$") == true) return ElementType.IfWithElse;
             else return ElementType.Function;
         }
 
@@ -632,11 +626,11 @@ namespace VLang.Frontends
                     value = value.Replace("\\'", "'");
                     value = value.Replace("\xff\xfe\0xfd", "\\");
 
-                    StringValues.Add("__reserved_gamSTR" + i.ToString(), value);
+                    StringValues.Add("__rcs" + i.ToString(), value);
 
                     Script = Script.Remove(last, iter - last + 1);
-                    String insertion = "__reserved_gamSTR" + i.ToString();
-                    Script = Script.Insert(last, "_gamSTR" + i.ToString());
+                    String insertion = "__rcs" + i.ToString();
+                    Script = Script.Insert(last, "__rcs" + i.ToString());
                     iter -= iter - last + insertion.Length - 1;
                 }
                 iter++;

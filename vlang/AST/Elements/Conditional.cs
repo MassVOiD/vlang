@@ -26,7 +26,14 @@ namespace VLang.AST.Elements
 
         public override string ToJSON()
         {
-            return String.Format("Conditional({0})({{{1}}})({{{2}}})", Condition.ToJSON(), IfNode.ToJSON(), ElseNode.ToJSON());
+            if (ElseNode != null)
+            {
+                return String.Format("Conditional({0})({{{1}}})else({{{2}}})", Condition.ToJSON(), IfNode.ToJSON(), ElseNode.ToJSON());
+            }
+            else
+            {
+                return String.Format("Conditional({0})({{{1}}})", Condition.ToJSON(), IfNode.ToJSON());
+            }
         }
     }
 }
