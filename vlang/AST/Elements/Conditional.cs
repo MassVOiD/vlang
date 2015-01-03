@@ -6,9 +6,9 @@ namespace VLang.AST.Elements
     internal class Conditional : ASTElement, IASTElement
     {
         private Expression Condition;
-        private ASTNode IfNode, ElseNode;
+        private int IfNode, ElseNode;
 
-        public Conditional(Expression condition, ASTNode trueBranch, ASTNode falseBranch = null)
+        public Conditional(Expression condition, int trueBranch, int falseBranch = -1)
         {
             Condition = condition;
             IfNode = trueBranch;
@@ -21,18 +21,18 @@ namespace VLang.AST.Elements
             bool? exp = null;
             if (expraw is bool) exp = (bool)expraw;
             else throw new Exception("Not boolean in conditional expression");
-            return exp.Value ? IfNode.GetValue(context) : (ElseNode != null ? ElseNode.GetValue(context) : null);
+            return exp.Value ? context.GetGroup(IfNode).GetValue(context) : (ElseNode != -1 ? context.GetGroup(ElseNode).GetValue(context) : null);
         }
 
         public override string ToJSON()
         {
-            if (ElseNode != null)
+            if (ElseNode != -1)
             {
-                return String.Format("Conditional({0})({{{1}}})else({{{2}}})", Condition.ToJSON(), IfNode.ToJSON(), ElseNode.ToJSON());
+                return String.Format("Conditional({0})({{{1}}})else({{{2}}})", Condition.ToJSON(), Engine.Groups[IfNode].ToJSON(), Engine.Groups[ElseNode].ToJSON());
             }
             else
             {
-                return String.Format("Conditional({0})({{{1}}})", Condition.ToJSON(), IfNode.ToJSON());
+                return String.Format("Conditional({0})({{{1}}})", Condition.ToJSON(), Engine.Groups[IfNode].ToJSON());
             }
         }
     }

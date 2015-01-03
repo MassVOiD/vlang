@@ -7,6 +7,15 @@ namespace VLang.AST
 {
     public class ASTNode : List<IASTElement>, IASTElement
     {
+
+        public Dictionary<int, ASTNode> Groups;
+
+        public void SetGroups(Dictionary<int, ASTNode> g)
+        {
+            if (Groups != null) throw new Exception("Groups can be set only once");
+            Groups = g;
+        }
+
         public object GetValue(ExecutionContext context)
         {
             object result = null;

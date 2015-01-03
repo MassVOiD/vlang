@@ -7,17 +7,17 @@ namespace VLang.Runtime
     internal class Function : ICallable
     {
         private Dictionary<int, List<string>> ArgumentNames;
-        private Dictionary<int, ASTNode> Overloads;
+        private Dictionary<int, int> Overloads;
 
-        public Function(List<string> names, ASTNode body)
+        public Function(List<string> names, int body)
         {
             ArgumentNames = new Dictionary<int, List<string>>();
             ArgumentNames.Add(names.Count, names);
-            Overloads = new Dictionary<int, ASTNode>();
+            Overloads = new Dictionary<int, int>();
             Overloads.Add(names.Count, body);
         }
 
-        public void AddOverload(List<string> names, ASTNode body)
+        public void AddOverload(List<string> names, int body)
         {
             if (Overloads.ContainsKey(names.Count))
             {
@@ -29,7 +29,7 @@ namespace VLang.Runtime
             }
             ArgumentNames = new Dictionary<int, List<string>>();
             ArgumentNames.Add(names.Count, names);
-            Overloads = new Dictionary<int, ASTNode>();
+            Overloads = new Dictionary<int, int>();
             Overloads.Add(names.Count, body);
         }
 
@@ -40,7 +40,7 @@ namespace VLang.Runtime
                 throw new Exception("Function not found");
             }
             ExecutionContext newContext = new ExecutionContext(context);
-            return Overloads[0].GetValue(newContext);
+            return context.GetGroup(Overloads[0]).GetValue(newContext);
         }
 
         public object Call(ExecutionContext context, object[] args)
@@ -58,7 +58,7 @@ namespace VLang.Runtime
             {
                 newContext.SetValue(ArgumentNames[args.Length][i], args[i]);
             }
-            return Overloads[args.Length].GetValue(newContext);
+            return context.GetGroup(Overloads[args.Length]).GetValue(newContext);
         }
 
         public bool IsVoid()

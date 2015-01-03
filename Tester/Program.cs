@@ -10,13 +10,14 @@ namespace Tester
         {
             Engine engine = new Engine();
             var ast = engine.Compile(
-@"a = 2;
-if(a == 2){
-    print('ok');
-} else {
-    print('nie');
+@"
+test(a){
+    if(a > 0){
+        print(a);
+        test(a-1);
+    }
 }
-print(123123);"
+test(15);"
 );
             Console.WriteLine(ast.ToJSON());
             Console.Read();

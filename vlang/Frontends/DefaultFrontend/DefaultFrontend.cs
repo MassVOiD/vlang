@@ -183,7 +183,7 @@ namespace VLang.Frontends
                     buffer.Append(c);
                 }
             }
-
+            root.SetGroups(Groups);
             return root;
         }
 
@@ -393,7 +393,7 @@ namespace VLang.Frontends
                         {
                             string[] arguments = TrimBraces(CutExpression(element)).Split(',').Select(a => a.Trim()).ToArray();
                             int groupId = int.Parse(Flatten(element).Trim().Replace("_reserved_codegroup_", ""));
-                            list.Add(new Value(new Runtime.Function(arguments.ToList(), Groups[groupId])));
+                            list.Add(new Value(new Runtime.Function(arguments.ToList(), groupId)));
                         }
                         break;
 
@@ -402,7 +402,7 @@ namespace VLang.Frontends
                             string[] arguments = TrimBraces(CutExpression(element)).Split(',').Select(a => a.Trim()).ToArray();
                             string name = FlattenKeepBraces(element).Split('(')[0];
                             int groupId = int.Parse(Flatten(element).Trim().Replace(name + "_reserved_codegroup_", ""));
-                            list.Add(new FunctionDefinition(name, arguments, Groups[groupId]));
+                            list.Add(new FunctionDefinition(name, arguments, groupId));
                         }
                         break;
 
@@ -411,7 +411,7 @@ namespace VLang.Frontends
                             Expression expr = ToRPN(CutExpression(element).Trim());
                             string sub = Flatten(element);
                             int groupId1 = int.Parse(sub.Trim().Replace("if_reserved_codegroup_", ""));
-                            list.Add(new Conditional(expr, Groups[groupId1]));
+                            list.Add(new Conditional(expr, groupId1));
                         }
                         break;
 
@@ -422,7 +422,7 @@ namespace VLang.Frontends
                             string[] sub = Flatten(element).Split(new string[] { "else" }, 2, StringSplitOptions.RemoveEmptyEntries);
                             int groupId1 = int.Parse(sub[0].Trim().Replace("if_reserved_codegroup_", ""));
                             int groupId2 = int.Parse(sub[1].Trim().Replace("_reserved_codegroup_", ""));
-                            list.Add(new Conditional(expr, Groups[groupId1], Groups[groupId2]));
+                            list.Add(new Conditional(expr, groupId1, groupId2));
                         }
                         break;
                 }

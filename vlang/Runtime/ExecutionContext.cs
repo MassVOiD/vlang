@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using VLang.AST;
 
 namespace VLang.Runtime
 {
@@ -7,12 +8,37 @@ namespace VLang.Runtime
     {
         private Dictionary<string, Variable> Fields;
         private List<ExecutionContext> SearchPath;
+        private Dictionary<int, ASTNode> Groups;
 
         public ExecutionContext(params ExecutionContext[] parents)
         {
             Fields = new Dictionary<string, Variable>();
             SearchPath = new List<ExecutionContext>();
             SearchPath.AddRange(parents);
+        }
+
+
+        public void SetGroups(Dictionary<int, ASTNode> g)
+        {
+            Groups = g;
+        }
+
+        public ASTNode GetGroup(int gid)
+        {
+            var reference = this;
+            if (reference.Groups != null && reference.Groups.ContainsKey(gid))
+            {
+                return reference.Groups[gid];
+            }
+            while (reference.Groups == null && reference.SearchPath.Count > 0)
+            {
+                foreach (var e in reference.SearchPath)
+                {
+                    var res = e.GetGroup(gid);
+                    if (res != null) return res;
+                }
+            }
+            return null;
         }
 
         public bool Exists(string name)

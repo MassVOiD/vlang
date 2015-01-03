@@ -1,6 +1,7 @@
 ﻿using VLang.AST;
 using VLang.Frontends;
 using VLang.Runtime;
+using System.Collections.Generic;
 
 namespace VLang
 {
@@ -15,11 +16,19 @@ namespace VLang
             Interop = new InteropManager();
             Context = new ExecutionContext();
         }
+        public static Dictionary<int, ASTNode> Groups;
+
+        public void SetGroups(Dictionary<int, ASTNode> g)
+        {
+            Groups = g;
+            Context.SetGroups(Groups);
+        }
 
         public ASTNode Compile(string script)
         {
             Frontend = new DefaultFrontend(script);
             ASTNode node = Frontend.Parse();
+            SetGroups(node.Groups);
             return node;
         }
 
