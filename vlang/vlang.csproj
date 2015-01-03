@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5E15455A-25E4-4FEE-859C-69612D9A4DE4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>VLang</RootNamespace>
+    <AssemblyName>vlang</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AST\ASTCreator.cs" />
+    <Compile Include="AST\ASTNode.cs" />
+    <Compile Include="AST\Elements\FunctionDefinition.cs" />
+    <Compile Include="AST\Elements\Return.cs" />
+    <Compile Include="AST\Elements\Value.cs" />
+    <Compile Include="AST\Elements\Assignment.cs" />
+    <Compile Include="AST\Elements\ASTElement.cs" />
+    <Compile Include="AST\Elements\Conditional.cs" />
+    <Compile Include="AST\Elements\Expression.cs" />
+    <Compile Include="AST\Elements\FunctionCall.cs" />
+    <Compile Include="AST\Elements\Name.cs" />
+    <Compile Include="AST\Elements\Operator.cs" />
+    <Compile Include="AST\IASTElement.cs" />
+    <Compile Include="Engine.cs" />
+    <Compile Include="Frontends\DefaultFrontend\DefaultFrontend.cs" />
+    <Compile Include="Frontends\Frontend.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Runtime\ExecutionContext.cs" />
+    <Compile Include="Runtime\Function.cs" />
+    <Compile Include="Runtime\ICallable.cs" />
+    <Compile Include="Runtime\InteropManager.cs" />
+    <Compile Include="Runtime\Delegation.cs" />
+    <Compile Include="Runtime\ReflectionMethod.cs" />
+    <Compile Include="Runtime\Variable.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
