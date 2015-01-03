@@ -17,7 +17,12 @@ test(a){
         test(a-1);
     }
 }
-test(15);"
+test(15);
+print(if(14 % 2 == 0) {
+    'tak';
+} else {
+    'nie';
+});"
 );
             Console.WriteLine(ast.ToJSON());
             Console.Read();

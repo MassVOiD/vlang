@@ -419,7 +419,7 @@ namespace VLang.Frontends
                         {
                             string exp = CutExpression(element);
                             Expression expr = ToRPN(exp.Trim());
-                            string[] sub = Flatten(element).Split(new string[] { "else" }, 2, StringSplitOptions.RemoveEmptyEntries);
+                            string[] sub = Flatten(element.Replace(" ", "")).Split(new string[] { "else" }, 2, StringSplitOptions.RemoveEmptyEntries);
                             int groupId1 = int.Parse(sub[0].Trim().Replace("if_reserved_codegroup_", ""));
                             int groupId2 = int.Parse(sub[1].Trim().Replace("_reserved_codegroup_", ""));
                             list.Add(new Conditional(expr, groupId1, groupId2));
