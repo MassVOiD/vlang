@@ -9,14 +9,24 @@ namespace VLang.Runtime
         private Dictionary<string, Variable> Fields;
         private List<ExecutionContext> SearchPath;
         private Dictionary<int, ASTNode> Groups;
+        public InteropManager InteropManager;
 
         public ExecutionContext(params ExecutionContext[] parents)
         {
             Fields = new Dictionary<string, Variable>();
             SearchPath = new List<ExecutionContext>();
             SearchPath.AddRange(parents);
+            if (InteropManager == null)
+            {
+                var tmp = SearchPath.FirstOrDefault(a => a.InteropManager != null);
+                if (tmp != null) InteropManager = tmp.InteropManager;
+            }
         }
 
+        public void SetInteropManager(InteropManager im)
+        {
+            InteropManager = im;
+        }
 
         public void SetGroups(Dictionary<int, ASTNode> g)
         {

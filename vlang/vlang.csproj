@@ -42,6 +42,9 @@
     <Compile Include="AST\ASTCreator.cs" />
     <Compile Include="AST\ASTNode.cs" />
     <Compile Include="AST\Elements\FunctionDefinition.cs" />
+    <Compile Include="AST\Elements\Import.cs" />
+    <Compile Include="AST\Elements\Mixin.cs" />
+    <Compile Include="AST\Elements\Using.cs" />
     <Compile Include="AST\Elements\Return.cs" />
     <Compile Include="AST\Elements\Value.cs" />
     <Compile Include="AST\Elements\Assignment.cs" />

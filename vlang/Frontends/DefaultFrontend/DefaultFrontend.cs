@@ -120,7 +120,13 @@ namespace VLang.Frontends
             AnonymousFunction,
             NamedFunction,
             If,
-            IfWithElse
+            IfWithElse,
+            Throw,
+            Catch,
+            Finally,
+            Using,
+            Import,
+            LoadAssembly
         }
 
         public override ASTNode Parse()
@@ -370,6 +376,21 @@ namespace VLang.Frontends
                     case ElementType.Variable:
                         {
                             if (element.StartsWith("return "))
+                            {
+                                string expr = element.Substring(6).TrimStart();
+                                list.Add(new Return(ToRPN(expr)));
+                            }
+                            else if (element.StartsWith("using "))
+                            {
+                                string expr = element.Substring(6).TrimStart();
+                                list.Add(new Using(expr));
+                            }
+                            else if (element.StartsWith("import "))
+                            {
+                                string expr = element.Substring(6).TrimStart();
+                                list.Add(new Return(ToRPN(expr)));
+                            }
+                            else if (element.StartsWith("mixin "))
                             {
                                 string expr = element.Substring(6).TrimStart();
                                 list.Add(new Return(ToRPN(expr)));

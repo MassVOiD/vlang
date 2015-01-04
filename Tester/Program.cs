@@ -9,22 +9,10 @@ namespace Tester
         private static void Main(string[] args)
         {
             Engine engine = new Engine();
-            var ast = engine.Compile(
-@"
-test(a){
-    if(a > 0){
-        print(a);
-        test(a-1);
-    }
-}
-test(15);
-print(if(14 % 2 == 0) {
-    'tak';
-} else {
-    'nie';
-});"
-);
-            Console.WriteLine(ast.ToJSON());
+            var ast = engine.Compile(System.IO.File.ReadAllText("test.vs"));
+            Console.WriteLine(new JSBeautifyLib.JSBeautify(ast.ToJSON(), new JSBeautifyLib.JSBeautifyOptions(){
+                preserve_newlines = true
+            }).GetResult());
             Console.Read();
 
             engine.Context.SetValue("print", 

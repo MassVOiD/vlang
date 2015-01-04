@@ -16,6 +16,18 @@ namespace VLang.AST.Elements
             Arguments = arguments.ToList();
         }
 
+        private object ReflectionWiseSearch(ExecutionContext context)
+        {
+            object function = context.GetValue(Name);
+            if (function != null && function is ICallable) return function;
+            else // real search. 
+            {
+
+            }
+            // TODO
+            return null;
+        }
+
         public object GetValue(ExecutionContext context)
         {
             object function = context.GetValue(Name);

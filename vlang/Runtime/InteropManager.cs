@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace VLang.Runtime
 {
-    internal class InteropManager
+    public class InteropManager
     {
         private List<Assembly> assemblies = new List<Assembly>();
         private Assembly assembly;
