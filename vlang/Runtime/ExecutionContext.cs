@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System;
 using VLang.AST;
 
 namespace VLang.Runtime
@@ -16,11 +17,9 @@ namespace VLang.Runtime
             Fields = new Dictionary<string, Variable>();
             SearchPath = new List<ExecutionContext>();
             SearchPath.AddRange(parents);
-            if (InteropManager == null)
-            {
-                var tmp = SearchPath.FirstOrDefault(a => a.InteropManager != null);
-                if (tmp != null) InteropManager = tmp.InteropManager;
-            }
+            var tmp = SearchPath.FirstOrDefault(a => a.InteropManager != null);
+            if (tmp != null) InteropManager = tmp.InteropManager;
+            
         }
 
         public void SetInteropManager(InteropManager im)
@@ -97,7 +96,7 @@ namespace VLang.Runtime
                 }
             }
             if (value.Count() == 0 && dontThrowIfNotFound) return defaultValue;
-            else throw new Exception("Field not found");
+            else if (!dontThrowIfNotFound && value.Count() == 0) throw new Exception("Field not found");
             return value.First().Value.Value;
         }
 

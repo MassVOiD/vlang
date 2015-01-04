@@ -22,6 +22,14 @@ namespace VLang.Runtime
             methods = new List<MethodInfo>();
             Types = new List<Type>();
             netruntime = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
+            ImportAllReferencesAssemblies();
+        }
+
+        public void ImportAllReferencesAssemblies()
+        {
+            var refs = Assembly.GetExecutingAssembly().GetReferencedAssemblies().Select<AssemblyName, string>(a => a.Name + ".dll");
+            ImportAssembly(Assembly.GetExecutingAssembly());
+            foreach (var r in refs) ImportAssembly(r);
         }
 
         public object CreateInstance(string name, object[] args)
@@ -309,6 +317,21 @@ namespace VLang.Runtime
                 }
             } // I hate c# style try/catch construction.
             catch { throw new Exception("Error loading reflection module " + name); }
+        }
+
+        public void ImportAssembly(Assembly assembly)
+        {
+            try
+            {
+                Module[] modules = assembly.GetModules();
+                foreach (Module module in modules)
+                {
+                    types = module.GetTypes();
+                    foreach (Type type in types) methods.AddRange(type.GetMethods());
+                    Types.AddRange(types);
+                }
+            } // I hate c# style try/catch construction.
+            catch { throw new Exception("Error loading reflection module " + assembly.FullName); }
         }
 
         public void SetValue(object instance, string search, object value)

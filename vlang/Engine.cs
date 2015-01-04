@@ -15,6 +15,7 @@ namespace VLang
         {
             Interop = new InteropManager();
             Context = new ExecutionContext();
+            Context.SetInteropManager(Interop);
         }
         public static Dictionary<int, ASTNode> Groups;
 

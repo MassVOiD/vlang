@@ -36,6 +36,7 @@ namespace VLang.AST.Elements
                 else
                 {
                     object val = element.GetValue(context);
+                    if (val != null) tempStack.Push(val); // THIS IS NOT SO OBVIOUS!
                     while (val is IASTElement) val = ((IASTElement)val).GetValue(context);
                 }
             }
