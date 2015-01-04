@@ -16,23 +16,38 @@ namespace VLang.AST.Elements
             Arguments = arguments.ToList();
         }
 
-        private object ReflectionWiseSearch(ExecutionContext context)
+        public object ReflectionWiseCall(ExecutionContext context)
         {
-            object function = context.GetValue(Name);
-            if (function != null && function is ICallable) return function;
-            else // real search. 
+            if (Name.Contains('.'))
             {
-
+                string[] parts = Name.Split('.');
+                object test = context.GetValue(parts[0]);
+                if (test != null)
+                {
+                    int i = 1;
+                    while (test != null && i < parts.Length)
+                    { // we need to call instance method and chain it
+                        test = new ReflectionMethod(test, parts[i]).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
+                        i++;
+                    }
+                    return test;
+                }
+                else
+                {
+                    Type val = context.InteropManager.GetTypeByName
+                }
             }
-            // TODO
-            return null;
         }
 
         public object GetValue(ExecutionContext context)
         {
             object function = context.GetValue(Name);
             if (function is ICallable) return ((ICallable)function).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
-            else throw new Exception("Function not callable");
+            else
+            {
+
+                throw new Exception("Function not callable");
+            }
         }
 
         public override bool HasValue(ExecutionContext context)

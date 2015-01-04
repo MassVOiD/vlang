@@ -85,7 +85,7 @@ namespace VLang.Runtime
             return value.First().Value;
         }
 
-        public object GetValue(string name)
+        public object GetValue(string name, bool dontThrowIfNotFound = false, object defaultValue = null)
         {
             var value = Fields.Where(a => a.Key == name);
             if (value == null || value.Count() == 0)
@@ -96,6 +96,8 @@ namespace VLang.Runtime
                     if (tmp != null) return tmp;
                 }
             }
+            if (value.Count() == 0 && dontThrowIfNotFound) return defaultValue;
+            else throw new Exception("Field not found");
             return value.First().Value.Value;
         }
 
