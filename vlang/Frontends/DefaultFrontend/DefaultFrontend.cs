@@ -128,6 +128,7 @@ namespace VLang.Frontends
             Catch,
             Finally,
             Using,
+            New,
             Import,
             LoadAssembly
         }
@@ -167,7 +168,7 @@ namespace VLang.Frontends
             }
             foreach (var elem in StringValues)
             {
-                root.Add(new Assignment(new Name(elem.Key), new Expression(new List<IASTElement>
+                root.Add(new Assignment(ToRPN(elem.Key), new Expression(new List<IASTElement>
                 {
                     new Value(elem.Value)
                 })));
@@ -376,7 +377,8 @@ namespace VLang.Frontends
                             string[] split = GammaSplitOne(element, '=');
                             string name = split[0];
                             string exp = split[1];
-                            list.Add(new Assignment(new Name(name.Trim()), ToRPN(exp)));
+                            list.Add(new Assignment(ToRPN(name.Trim()), ToRPN(exp)));
+
                         }
                         break;
 
@@ -408,14 +410,24 @@ namespace VLang.Frontends
                             }
                         }
                         break;
+                    case ElementType.New:
+                        {
+                            element = element.Substring(3).Trim();
+                            if (Flatten(element).Contains('.')) return ToRPN(element);
+
+                            Expression name = ToRPN(Flatten(element));
+                            string[] arguments = GammaSplit(TrimBraces(CutExpression(element)), ',');
+                            list.Add(new New(name, arguments.Select<string, Expression>(a => ToRPN(a)).ToList()));
+                        }
+                        break;
 
                     case ElementType.Function:
                         {
                             if (Flatten(element).Contains('.')) return ToRPN(element);
-                            
+
                             Expression name = ToRPN(Flatten(element));
                             string[] arguments = GammaSplit(TrimBraces(CutExpression(element)), ',');
-                            list.Add(new FunctionCall(name, arguments.Select<string, Expression>(a => ToRPN(a)).ToArray()));
+                            list.Add(new FunctionCall(name, arguments.Length == 1 && arguments[0] == "" ? new Expression[0] : arguments.Select<string, Expression>(a => ToRPN(a)).ToArray()));
                         }
                         break;
 
@@ -556,6 +568,7 @@ namespace VLang.Frontends
             else if (Regex.IsMatch(element.Replace(" ", ""), @".+\(\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.NamedFunction;
             else if (Regex.IsMatch(element.Replace(" ", ""), @"\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.AnonymousFunction;
             else if (Regex.IsMatch(element.Replace(" ", ""), @"^if\(\)_reserved_codegroup_([0-9]+)else_reserved_codegroup_([0-9]+)$") == true) return ElementType.IfWithElse;
+            else if (element.Trim().StartsWith("new ")) return ElementType.New;
             else return ElementType.Function;
         }
 

@@ -49,6 +49,50 @@ namespace VLang.AST.Elements
             return value;
         }
 
+        public class CLRReference
+        {
+            public object instance, field;
+        }
+
+        public CLRReference GetCLRReference(ExecutionContext context)
+        {
+            foreach (IASTElement element in List)
+            {
+                //context.UpdateEvaluationStack(this);
+                if (element is Operator)
+                {
+                    Operator op = element as Operator;
+                    int argc = op.GetArgumentsCount();
+                    List<object> args = new List<object>();
+                    while (argc-- > 0) args.Insert(0, Stack.Pop());
+                    Stack.Push(op.Execute(args.ToArray()));
+                }
+                else if (element.HasValue(context))
+                {
+                    if (element == List.Last() && element is Name)
+                    {
+                        object val = context.InteropManager.ExtractReference(Stack.Peek(), ((Name)element).Identifier);
+                        Stack.Push(new CLRReference()
+                        {
+                            field = val, instance = Stack.Pop()
+                        });
+                    }
+                    else
+                    {
+                        object val = element.GetValue(context);
+                        while (val is IASTElement) val = ((IASTElement)val).GetValue(context);
+                        Stack.Push(val);
+                    }
+                }
+            }
+            if (Stack.Count == 0) return null;
+            var value = Stack.Pop();
+            while (value is IASTElement) value = ((IASTElement)value).GetValue(context);
+            Stack = new Stack<object>();
+            if (value is CLRReference) return (CLRReference)value;
+            else throw new Exception("Cannot find reference");
+        }
+
         public override string ToJSON()
         {
             return String.Format("{0}", String.Join(",", List.Select<IASTElement, string>(a => a.ToJSON())));

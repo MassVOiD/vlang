@@ -1,9 +1,8 @@
-﻿using System;
-using System.IO;
+﻿using Tester;
 
-func = System.Console.WriteLine;
-
-contents = File.ReadAllText('test.vs');
-print(contents);
-te = 12334;
-print(te.ToString('X').Replace('3', 'XDDDDDD'));
+test = new TestClass(66);
+print(test.GetV());
+print(test.V);
+test.v = 77;
+print(test.V);
+print(test.GetV());

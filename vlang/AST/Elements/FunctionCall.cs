@@ -19,8 +19,16 @@ namespace VLang.AST.Elements
         object ReflectionWiseCall(string name, ExecutionContext context)
         {
             object obj = context.EvaluationStack.Pop();
-            if (obj is Type) return new ReflectionMethod(((Type)obj), name).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
-            else return new ReflectionMethod(context.EvaluationStack.Pop(), name).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
+            if (Arguments.Count == 0)
+            {
+                if (obj is Type) return new ReflectionMethod(((Type)obj), name).Call(context);
+                else return new ReflectionMethod(context.EvaluationStack.Pop(), name).Call(context);
+            }
+            else
+            {
+                if (obj is Type) return new ReflectionMethod(((Type)obj), name).Call(context);
+                else return new ReflectionMethod(context.EvaluationStack.Pop(), name).Call(context);
+            }
         }
 
         bool ReflectionWiseVoidCheck(string name, ExecutionContext context)
@@ -50,7 +58,11 @@ namespace VLang.AST.Elements
             //if (Name.Contains(".")) return ReflectionWiseCall(Name, context);
             object function = searchResult is ICallable ? searchResult : context.GetValue(Name, true);
             if (function == null) return ReflectionWiseCall(Name, context);
-            if (function is ICallable) return ((ICallable)function).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
+            if (function is ICallable)
+            {
+                if (Arguments.Count == 0) return ((ICallable)function).Call(context);
+                else return ((ICallable)function).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
+            }
             else
             {
                 throw new Exception("Function not callable");

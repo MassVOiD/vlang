@@ -7,6 +7,22 @@ using VLang.AST;
 
 namespace Tester
 {
+    public class TestClass
+    {
+        public int v;
+        public TestClass(int value)
+        {
+            v = value;
+        }
+        public int GetV(){
+            return v;
+        }
+        public int V
+        {
+            get { return v; }
+            set { V = v; }
+        }
+    }
     internal class Program
     {
         private static void Main(string[] args)

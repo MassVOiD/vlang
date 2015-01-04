@@ -5,7 +5,7 @@ namespace VLang.AST.Elements
 {
     internal class Name : ASTElement, IASTElement
     {
-        private string Identifier;
+        public string Identifier;
 
         public Name(string name)
         {
@@ -24,6 +24,11 @@ namespace VLang.AST.Elements
             res = context.InteropManager.GetTypeByName(Identifier);
             if (res != null) return res;
             if (context.InteropManager.DoesUseNamesace(Identifier)) return new InteropManager.NamespaceInfo(Identifier);
+            if (context.EvaluationStack.Count == 0)
+            {
+                context.SetValue(Identifier, null);
+                return context.GetReference(Identifier);
+            }
             res = context.InteropManager.Extract(context.EvaluationStack.Peek(), Identifier);
             return res;
         }

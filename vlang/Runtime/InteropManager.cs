@@ -42,6 +42,8 @@ namespace VLang.Runtime
         {
             var refs = Assembly.GetExecutingAssembly().GetReferencedAssemblies().Select<AssemblyName, string>(a => a.Name + ".dll");
             ImportAssembly(Assembly.GetExecutingAssembly());
+            ImportAssembly(Assembly.GetCallingAssembly());
+            ImportAssembly(Assembly.GetEntryAssembly());
             foreach (var r in refs) ImportAssembly(r);
         }
 
@@ -134,6 +136,33 @@ namespace VLang.Runtime
             catch { }
             try { current = type.GetMember(search, bflags).First(); return current; }
             catch { }
+
+            return null;
+        }
+        public object ExtractReference(object instance, string search)
+        {
+            object root = instance, current = root;
+            if (instance == null) return null;
+            Type type = instance is Type ? (Type)instance : instance.GetType();
+            BindingFlags bflags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+            current = type.GetField(search, bflags);
+            if (current != null) return current;
+            current = type.GetProperty(search, bflags);
+            if (current != null) return current;
+
+            current = type.GetNestedType(search, bflags);
+            if (current != null) return current;
+
+            current = type.GetInterface(search);
+            if (current != null) return current;
+
+            current = type.GetEvent(search, bflags);
+            if (current != null) return current;
+
+            current = type.GetMember(search, bflags).First();
+            if (current != null) return current;
+
 
             return null;
         }

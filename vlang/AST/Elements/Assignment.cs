@@ -5,10 +5,10 @@ namespace VLang.AST.Elements
 {
     internal class Assignment : ASTElement, IASTElement
     {
-        private Name Target;
+        private Expression Target;
         private Expression Value;
 
-        public Assignment(Name target, Expression value)
+        public Assignment(Expression target, Expression value)
         {
             Target = target;
             Value = value;
@@ -16,9 +16,23 @@ namespace VLang.AST.Elements
 
         public object GetValue(ExecutionContext context)
         {
-            object val = Value.GetValue(context);
-            Target.GetReference(context).Value = val;
-            return val;
+            try
+            {
+                object val = Value.GetValue(context);
+                object target = Target.GetValue(context);
+                ((Variable)target).Value = val;
+                return val;
+            }
+            catch
+            {
+                var clrref = Target.GetCLRReference(context);
+                dynamic field = clrref.field;
+                object val = Value.GetValue(context);
+                field.SetValue(clrref.instance, val);
+                return field;
+               // context.InteropManager.SetValue(instance, name, Value.GetValue(context));
+            }
+            throw new Exception("Can not assign field");
         }
 
         public override string ToJSON()
