@@ -18,7 +18,7 @@ namespace VLang.AST.Elements
         public enum Operators
         {
             Add, Subtract, Multiply, Divide, Modulo, Power, And, BAnd, Or, BOr, Equals, InstanceOf,
-            ChildOf, Is, NotEquals, More, MoreOrEqual, Less, LessOrEqual, Not, Xor, Assign
+            ChildOf, Is, NotEquals, More, MoreOrEqual, Less, LessOrEqual, Not, Xor, Assign, Accessor
         }
 
         public dynamic Execute(dynamic[] arguments)

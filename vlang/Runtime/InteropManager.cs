@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.CodeDom.Compiler;
+using Microsoft.CSharp;
 
 namespace VLang.Runtime
 {
@@ -14,6 +16,7 @@ namespace VLang.Runtime
         private String netruntime = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
         private Type[] types;
         private List<Type> Types = new List<Type>();
+        private CSharpCodeProvider compiler = new CSharpCodeProvider();
 
         public InteropManager()
         {
@@ -25,11 +28,40 @@ namespace VLang.Runtime
             ImportAllReferencesAssemblies();
         }
 
+        public bool ContainsType(Type type)
+        {
+            return Types.Contains(type);
+        }
+
+        public bool DoesUseNamesace(string np)
+        {
+            return namespaces.Contains(np);
+        }
+
         public void ImportAllReferencesAssemblies()
         {
             var refs = Assembly.GetExecutingAssembly().GetReferencedAssemblies().Select<AssemblyName, string>(a => a.Name + ".dll");
             ImportAssembly(Assembly.GetExecutingAssembly());
             foreach (var r in refs) ImportAssembly(r);
+        }
+
+        public object ExecuteChain(string value, Dictionary<string, object> bindings)
+        {
+            string arglist = string.Join(", ", bindings.Select<KeyValuePair<string, object>, string>(a => a.Value.GetType().FullName + " " + a.Key));
+            string code = string.Format(@"namespace VLang.Runtime.Eval{{ public static class InteropInternalEvaluator {{ public static object Evaluate({0}) {{ return {1}; }} }} }}", arglist, value);
+            var name = "F" + Guid.NewGuid().ToString().Replace("-", string.Empty);
+
+            var parameters = new CompilerParameters(assemblies.Select<Assembly, string>(a => a.GetName().Name + ".dll").ToArray())
+            {
+                GenerateInMemory = true
+            };
+
+            var compilerResult = compiler.CompileAssemblyFromSource(parameters, code);
+            var compiledAssembly = compilerResult.CompiledAssembly;
+            var type = compiledAssembly.GetType("VLang.Runtime.Eval.InteropInternalEvaluator");
+            var method = type.GetMethod("Eval");
+            object result = method.Invoke(null, bindings.Values.ToArray());
+            return result;
         }
 
         public object CreateInstance(string name, object[] args)

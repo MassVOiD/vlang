@@ -11,6 +11,13 @@ namespace VLang.Runtime
         private List<ExecutionContext> SearchPath;
         private Dictionary<int, ASTNode> Groups;
         public InteropManager InteropManager;
+        private Stack<object> RealEvaluationStack;
+        public Stack<object> EvaluationStack { 
+            get{
+                return Root.RealEvaluationStack;
+            }
+        }
+        public ExecutionContext Root;
 
         public ExecutionContext(params ExecutionContext[] parents)
         {
@@ -19,7 +26,18 @@ namespace VLang.Runtime
             SearchPath.AddRange(parents);
             var tmp = SearchPath.FirstOrDefault(a => a.InteropManager != null);
             if (tmp != null) InteropManager = tmp.InteropManager;
+            if (parents.Length == 0) Root = this;
+            else
+            {
+                Root = parents.First(a => a.Root != null);
+            }
             
+        }
+
+        public void UpdateEvaluationStack(AST.Elements.Expression expression)
+        {
+            if (RealEvaluationStack == null) RealEvaluationStack = new Stack<object>();
+            while (expression.Stack.Count != 0) Root.EvaluationStack.Push(expression.Stack.Pop());
         }
 
         public void SetInteropManager(InteropManager im)

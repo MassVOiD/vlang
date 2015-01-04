@@ -34,7 +34,8 @@ namespace VLang.Frontends
             {"<", VLang.AST.Elements.Operator.Operators.Less},
             {"<=", VLang.AST.Elements.Operator.Operators.LessOrEqual},
             {"!", VLang.AST.Elements.Operator.Operators.Not},
-            {"=", VLang.AST.Elements.Operator.Operators.Assign}
+            {"=", VLang.AST.Elements.Operator.Operators.Assign},
+            {".", VLang.AST.Elements.Operator.Operators.Accessor}
         };
 
         private Dictionary<int, ASTNode> Groups;
@@ -63,7 +64,8 @@ namespace VLang.Frontends
             {">=", 2},
             {"<", 2},
             {"<=", 2},
-            {"!", 1}
+            {"!", 1},
+            {".", 2}
         };
 
         private Dictionary<string, short> operators = new Dictionary<string, short>
@@ -91,8 +93,9 @@ namespace VLang.Frontends
             {">=", 0},
             {"<", 0},
             {"<=", 0},
-            {"!", 4},
-            {"=", 4}
+            {"!", 3},
+            {"=", 4},
+            {".", 3}
         };
 
         private Dictionary<string, string> StringValues;
@@ -211,6 +214,10 @@ namespace VLang.Frontends
             {
                 return CreateExpression(new string[] { exp });
             }
+            if (Flatten(NormalizeBraces(exp)).StartsWith("using "))
+            {
+                return CreateExpression(new string[] { exp });
+            }
             List<string> output = new List<string>();
             Stack<string> rpns = new Stack<string>();
 
@@ -322,7 +329,7 @@ namespace VLang.Frontends
                     output[i] = output[i].Replace(stub.Key, stub.Value);
                 }
             }
-            return CreateExpression(output.ToArray());
+            return CreateExpression(output.Where(a => a != ".").ToArray());
         }
 
         private int CountBraces(string input)
@@ -404,8 +411,10 @@ namespace VLang.Frontends
 
                     case ElementType.Function:
                         {
-                            string name = Flatten(element);
-                            string[] arguments = TrimBraces(CutExpression(element)).Split(',');
+                            if (Flatten(element).Contains('.')) return ToRPN(element);
+                            
+                            Expression name = ToRPN(Flatten(element));
+                            string[] arguments = GammaSplit(TrimBraces(CutExpression(element)), ',');
                             list.Add(new FunctionCall(name, arguments.Select<string, Expression>(a => ToRPN(a)).ToArray()));
                         }
                         break;
@@ -535,13 +544,13 @@ namespace VLang.Frontends
         {
             if (element == "false" || element == "true") return ElementType.Bool;
             element = FlattenKeepBraces(element);
+            if (operators.Keys.Contains(element)) return ElementType.Operator;
             if (Regex.IsMatch(element, @"[^0-7]") == false && element.StartsWith("0")) return ElementType.Octan;
             else if (Regex.IsMatch(element, @"[^0-9]") == false) return ElementType.Integer;
             else if (Regex.IsMatch(element, @"[^0-9.]") == false) return ElementType.Double;
             else if (Regex.IsMatch(element, @"[^0-9a-fA-Fx]") == false && element.StartsWith("0x")) return ElementType.Hex;
             else if (Regex.IsMatch(element, @".+?(`).+?") == true && Regex.IsMatch(element, @"[\(\)=]") == false) return ElementType.Cast;
             else if (Regex.IsMatch(element, @"^([^=]+)(=)([^=]+)$") == true) return ElementType.Assignment;
-            else if (operators.Keys.Contains(element)) return ElementType.Operator;
             else if (Regex.IsMatch(element, @"[\(\)]") == false) return ElementType.Variable;
             else if (Regex.IsMatch(element.Replace(" ", ""), @"^if\(\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.If;
             else if (Regex.IsMatch(element.Replace(" ", ""), @".+\(\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.NamedFunction;
@@ -676,7 +685,32 @@ namespace VLang.Frontends
             while (Script.IndexOf(";;") != -1) Script = Script.Replace(";;", ";");
             // now we're clean
         }
-
+        static private string[] GammaSplit(String str, char sep)
+        {
+            if (!str.Contains('(')) return str.Split(sep);
+            Int32 bracelevel = 0, iter = 0;
+            List<Int32> indexes = new List<Int32>();
+            indexes.Add(0);
+            while (iter < str.Length)
+            {
+                if (str[iter] == '(') bracelevel++;
+                else if (str[iter] == ')') bracelevel--;
+                else if (bracelevel == 0 && str[iter] == sep) indexes.Add(iter);
+                ++iter;
+            }
+            indexes.Add(str.Length);
+            List<String> ret = new List<String>();
+            for (iter = 1; iter < indexes.Count; iter++)
+            {
+                ret.Add(
+                    str.Substring(
+                        indexes[iter - 1],
+                        indexes[iter] - indexes[iter - 1]
+                    ).TrimEnd(new char[] { sep }).TrimStart(new char[] { sep })
+                );
+            }
+            return ret.ToArray();
+        }
         private String TrimBraces(String str)
         {
             String output = str;

@@ -2,7 +2,7 @@
 
 namespace VLang.AST.Elements
 {
-    internal abstract class ASTElement
+    public abstract class ASTElement
     {
         public virtual bool HasValue(ExecutionContext context)
         {

@@ -8,51 +8,26 @@ namespace VLang.AST.Elements
     internal class FunctionCall : ASTElement, IASTElement
     {
         private List<Expression> Arguments;
-        private string Name;
+        private Expression Func;
 
-        public FunctionCall(string name, params Expression[] arguments)
+        public FunctionCall(Expression func, params Expression[] arguments)
         {
-            Name = name;
+            Func = func;
             Arguments = arguments.ToList();
         }
 
-        object ReflectionWiseCall(ExecutionContext context)
+        object ReflectionWiseCall(string name, ExecutionContext context)
         {
-            if (Name.Contains('.'))
-            {
-                string[] parts = Name.Split('.');
-                object test = context.GetValue(parts[0], true);
-                if (test != null)
-                {
-                    int i = 1;
-                    while (test != null && i < parts.Length)
-                    { // we need to call instance method and chain it
-                        test = new ReflectionMethod(test, parts[i]).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
-                        i++;
-                    }
-                    return test;
-                }
-                else
-                {
-                    Type val = context.InteropManager.GetTypeByName(parts[0]);
-                    test = new ReflectionMethod(val, parts[1]).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
-                    int i = 2;
-                    while (test != null && i < parts.Length)
-                    { // we need to call instance method and chain it
-                        test = new ReflectionMethod(test, parts[i]).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
-                        i++;
-                    }
-                    return test;
-                }
-            }
-            throw new Exception("Method not found");
+            object obj = context.EvaluationStack.Pop();
+            if (obj is Type) return new ReflectionMethod(((Type)obj), name).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
+            else return new ReflectionMethod(context.EvaluationStack.Pop(), name).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
         }
 
-        bool ReflectionWiseVoidCheck(ExecutionContext context)
+        bool ReflectionWiseVoidCheck(string name, ExecutionContext context)
         {
-            if (Name.Contains('.'))
+            if (name.Contains('.'))
             {
-                string[] parts = Name.Split('.');
+                string[] parts = name.Split('.');
                 object test = context.GetValue(parts[0], true);
                 if (test != null)
                 {
@@ -70,8 +45,11 @@ namespace VLang.AST.Elements
 
         public object GetValue(ExecutionContext context)
         {
-            if (Name.Contains(".")) return ReflectionWiseCall(context);
-            object function = context.GetValue(Name);
+            object searchResult = Func.GetValue(context);
+            string Name = Func.GetValue(context).ToString();
+            //if (Name.Contains(".")) return ReflectionWiseCall(Name, context);
+            object function = searchResult is ICallable ? searchResult : context.GetValue(Name, true);
+            if (function == null) return ReflectionWiseCall(Name, context);
             if (function is ICallable) return ((ICallable)function).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
             else
             {
@@ -81,14 +59,12 @@ namespace VLang.AST.Elements
 
         public override bool HasValue(ExecutionContext context)
         {
-            if (Name.Contains(".")) return ReflectionWiseVoidCheck(context);
-            object function = context.GetValue(Name);
-            if (function is ICallable) return !((ICallable)function).IsVoid();
-            else throw new Exception("Function not callable");
+            return true; // not so correct
         }
 
         public override string ToJSON()
         {
+            string Name = Func.ToJSON();
             return String.Format("FunctionCall({0}{{{1}}})", Name, String.Join(",", Arguments.Select<Expression, string>(a => a.ToJSON())));
         }
     }

@@ -19,7 +19,13 @@ namespace VLang.AST.Elements
 
         public object GetValue(ExecutionContext context)
         {
-            return context.GetValue(Identifier);
+            object res = context.GetValue(Identifier, true);
+            if (res != null) return res;
+            res = context.InteropManager.GetTypeByName(Identifier);
+            if (res != null) return res;
+            if (context.InteropManager.DoesUseNamesace(Identifier)) return new InteropManager.NamespaceInfo(Identifier);
+            res = context.InteropManager.Extract(context.EvaluationStack.Peek(), Identifier);
+            return res;
         }
 
         public override string ToJSON()

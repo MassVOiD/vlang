@@ -34,6 +34,18 @@ namespace VLang.AST
             return true;
         }
 
+        public List<IASTElement> GetAllNodesFlat()
+        {
+            List<IASTElement> leafs = this.Where(a => a is IASTElement && !(a is Elements.Expression)).ToList();
+            List<IASTElement> branches = this.Where(a => a is Elements.Expression || a is ASTNode).ToList();
+            foreach (var branch in branches)
+            {
+                if (branch is ASTNode) leafs.AddRange(((ASTNode)branch).GetAllNodesFlat());
+                else leafs.AddRange(((Elements.Expression)branch).List);
+            }
+            return leafs;
+        }
+
         public string ToJSON()
         {
             return String.Format("ASTNode{{{0};}};", String.Join(";", this.Select<IASTElement, string>(a => a.ToJSON())));

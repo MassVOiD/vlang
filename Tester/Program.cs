@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using VLang;
 using VLang.Runtime;
+using VLang.AST;
 
 namespace Tester
 {
@@ -10,7 +13,8 @@ namespace Tester
         {
             Engine engine = new Engine();
             var ast = engine.Compile(System.IO.File.ReadAllText("test.vs"));
-            Console.WriteLine(new JSBeautifyLib.JSBeautify(ast.ToJSON(), new JSBeautifyLib.JSBeautifyOptions(){
+            Console.WriteLine(new JSBeautifyLib.JSBeautify(ast.ToJSON(), new JSBeautifyLib.JSBeautifyOptions()
+            {
                 preserve_newlines = true
             }).GetResult());
             Console.Read();
