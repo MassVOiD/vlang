@@ -27,13 +27,20 @@ namespace Tester
     {
         private static void Main(string[] args)
         {
-            Engine engine = new Engine();
+            Engine engine = new Engine(new System.Reflection.Assembly[] { System.Reflection.Assembly.GetExecutingAssembly() });
             var ast = engine.Compile(System.IO.File.ReadAllText("test.vs"));
+            /*Console.WriteLine("Raw");
             Console.WriteLine(new JSBeautifyLib.JSBeautify(ast.ToJSON(), new JSBeautifyLib.JSBeautifyOptions()
             {
                 preserve_newlines = true
             }).GetResult());
-            Console.Read();
+            Console.WriteLine("Optimized");*/
+            ast.Optimize();
+            /*Console.WriteLine(new JSBeautifyLib.JSBeautify(ast.ToJSON(), new JSBeautifyLib.JSBeautifyOptions()
+            {
+                preserve_newlines = true
+            }).GetResult());
+            Console.Read();*/
 
             engine.Context.SetValue("print", 
                 new Delegation(
@@ -41,8 +48,8 @@ namespace Tester
                         (a) => Console.WriteLine(a))));
 
             engine.Execute(ast);
-            Console.Read();
-            Console.Read();
+            //Console.Read();
+            //Console.Read();
         }
     }
 }

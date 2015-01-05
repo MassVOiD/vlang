@@ -197,7 +197,7 @@ namespace VLang.Frontends
             return root;
         }
 
-        public Expression ToRPN(string exp)
+        public IASTElement ToRPN(string exp)
         {
             exp = exp.Trim();
             // i dont know if it will work. but it should anyway it should get back in there stipped
@@ -346,7 +346,7 @@ namespace VLang.Frontends
             return br1 + br2;
         }
 
-        private Expression CreateExpression(string[] rpn)
+        private IASTElement CreateExpression(string[] rpn)
         {
             var list = new List<IASTElement>();
             foreach (string element2 in rpn)
@@ -415,9 +415,9 @@ namespace VLang.Frontends
                             element = element.Substring(3).Trim();
                             if (Flatten(element).Contains('.')) return ToRPN(element);
 
-                            Expression name = ToRPN(Flatten(element));
+                            IASTElement name = ToRPN(Flatten(element));
                             string[] arguments = GammaSplit(TrimBraces(CutExpression(element)), ',');
-                            list.Add(new New(name, arguments.Select<string, Expression>(a => ToRPN(a)).ToList()));
+                            list.Add(new New(name, arguments.Select<string, IASTElement>(a => ToRPN(a)).ToList()));
                         }
                         break;
 
@@ -425,9 +425,9 @@ namespace VLang.Frontends
                         {
                             if (Flatten(element).Contains('.')) return ToRPN(element);
 
-                            Expression name = ToRPN(Flatten(element));
+                            IASTElement name = ToRPN(Flatten(element));
                             string[] arguments = GammaSplit(TrimBraces(CutExpression(element)), ',');
-                            list.Add(new FunctionCall(name, arguments.Length == 1 && arguments[0] == "" ? new Expression[0] : arguments.Select<string, Expression>(a => ToRPN(a)).ToArray()));
+                            list.Add(new FunctionCall(name, arguments.Length == 1 && arguments[0] == "" ? new Expression[0] : arguments.Select<string, IASTElement>(a => ToRPN(a)).ToArray()));
                         }
                         break;
 
@@ -450,7 +450,7 @@ namespace VLang.Frontends
 
                     case ElementType.If:
                         {
-                            Expression expr = ToRPN(CutExpression(element).Trim());
+                            IASTElement expr = ToRPN(CutExpression(element).Trim());
                             string sub = Flatten(element);
                             int groupId1 = int.Parse(sub.Trim().Replace("if_reserved_codegroup_", ""));
                             list.Add(new Conditional(expr, groupId1));
@@ -460,7 +460,7 @@ namespace VLang.Frontends
                     case ElementType.IfWithElse:
                         {
                             string exp = CutExpression(element);
-                            Expression expr = ToRPN(exp.Trim());
+                            IASTElement expr = ToRPN(exp.Trim());
                             string[] sub = Flatten(element.Replace(" ", "")).Split(new string[] { "else" }, 2, StringSplitOptions.RemoveEmptyEntries);
                             int groupId1 = int.Parse(sub[0].Trim().Replace("if_reserved_codegroup_", ""));
                             int groupId2 = int.Parse(sub[1].Trim().Replace("_reserved_codegroup_", ""));
@@ -469,7 +469,7 @@ namespace VLang.Frontends
                         break;
                 }
             }
-            return new Expression(list);
+            return list.Count == 1 ? list[0] : new Expression(list);
         }
 
         private String CutExpression(String str)

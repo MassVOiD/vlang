@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using VLang.Runtime;
+using VLang.AST.Elements;
 
 namespace VLang.AST
 {
@@ -44,6 +45,33 @@ namespace VLang.AST
                 else leafs.AddRange(((Elements.Expression)branch).List);
             }
             return leafs;
+        }
+
+        public void Optimize()
+        {
+            for(int i=0;i<this.Count;i++)
+            {
+                var branch = this[i];
+                if (branch is ASTNode) ((ASTNode)branch).Optimize();
+                else if(branch is Expression)
+                {
+                    Expression expr = branch as Expression;
+                    if (expr.List.Count == 0)
+                    {
+                        this.RemoveAt(i--);
+                    } 
+                    else if (expr.List.Count == 1)
+                    {
+                        while (expr != null)
+                        {
+                            this.RemoveAt(i);
+                            this.Insert(i, expr.List.First());
+                            expr = expr.List.First() as Expression;
+                        }
+                    }
+                }
+            }
+            foreach (var group in Groups) group.Value.Optimize();
         }
 
         public string ToJSON()

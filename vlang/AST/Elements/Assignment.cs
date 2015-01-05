@@ -1,14 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using VLang.Runtime;
 
 namespace VLang.AST.Elements
 {
     internal class Assignment : ASTElement, IASTElement
     {
-        private Expression Target;
-        private Expression Value;
+        private IASTElement Target;
+        private IASTElement Value;
 
-        public Assignment(Expression target, Expression value)
+        public Assignment(IASTElement target, IASTElement value)
         {
             Target = target;
             Value = value;
@@ -25,11 +26,16 @@ namespace VLang.AST.Elements
             }
             catch
             {
-                var clrref = Target.GetCLRReference(context);
-                dynamic field = clrref.field;
-                object val = Value.GetValue(context);
-                field.SetValue(clrref.instance, val);
-                return field;
+                if (!(Target is Expression))
+                {
+                    Target = new Expression(new List<IASTElement>{Target});
+                }
+                    var clrref = ((Expression)Target).GetCLRReference(context);
+                    dynamic field = clrref.field;
+                    object val = Value.GetValue(context);
+                    field.SetValue(clrref.instance, val);
+                    return field;
+                
                // context.InteropManager.SetValue(instance, name, Value.GetValue(context));
             }
             throw new Exception("Can not assign field");

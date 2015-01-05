@@ -5,10 +5,10 @@ namespace VLang.AST.Elements
 {
     internal class Conditional : ASTElement, IASTElement
     {
-        private Expression Condition;
+        private IASTElement Condition;
         private int IfNode, ElseNode;
 
-        public Conditional(Expression condition, int trueBranch, int falseBranch = -1)
+        public Conditional(IASTElement condition, int trueBranch, int falseBranch = -1)
         {
             Condition = condition;
             IfNode = trueBranch;

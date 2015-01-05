@@ -95,7 +95,7 @@ namespace VLang.AST.Elements
 
         public override string ToJSON()
         {
-            return String.Format("{0}", String.Join(",", List.Select<IASTElement, string>(a => a.ToJSON())));
+            return String.Format("Expression{{{0}}}", String.Join(",", List.Select<IASTElement, string>(a => a.ToJSON())));
         }
     }
 }

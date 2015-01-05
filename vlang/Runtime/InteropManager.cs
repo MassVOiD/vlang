@@ -18,14 +18,38 @@ namespace VLang.Runtime
         private List<Type> Types = new List<Type>();
         private CSharpCodeProvider compiler = new CSharpCodeProvider();
 
-        public InteropManager()
+        public InteropManager(bool importAllReferenced)
         {
             assemblies = new List<Assembly>();
             namespaces = new List<String>();
             methods = new List<MethodInfo>();
             Types = new List<Type>();
             netruntime = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
-            ImportAllReferencesAssemblies();
+            if (importAllReferenced) ImportAllReferencesAssemblies();
+        }
+        public InteropManager(string[] imports = null)
+        {
+            assemblies = new List<Assembly>();
+            namespaces = new List<String>();
+            methods = new List<MethodInfo>();
+            Types = new List<Type>();
+            netruntime = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
+            if (imports != null)
+            {
+                foreach (var a in imports) ImportAssembly(a);
+            }
+        }
+        public InteropManager(Assembly[] imports = null)
+        {
+            assemblies = new List<Assembly>();
+            namespaces = new List<String>();
+            methods = new List<MethodInfo>();
+            Types = new List<Type>();
+            netruntime = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
+            if (imports != null)
+            {
+                foreach (var a in imports) ImportAssembly(a);
+            }
         }
 
         public bool ContainsType(Type type)
@@ -185,9 +209,7 @@ namespace VLang.Runtime
                 {
                     foreach (String nm in namespaces)
                     {
-                        type = Types.Find(a => a.FullName == nm + "." + name && a.GetConstructor(new Type[] { }) != null);
-                        if (type != null) break;
-                        type = Types.Find(a => a.FullName == nm + "+" + name && a.GetConstructor(new Type[] { }) != null);
+                        type = Types.Find(a => (a.FullName == nm + "." + name || a.FullName == nm + "+" + name) && a.GetConstructor(new Type[] { }) != null);
                         if (type != null) break;
                     }
                 }

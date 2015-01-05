@@ -5,9 +5,9 @@ namespace VLang.AST.Elements
 {
     internal class Mixin : ASTElement, IASTElement
     {
-        private Expression Expression;
+        private IASTElement Expression;
 
-        public Mixin(Expression expression)
+        public Mixin(IASTElement expression)
         {
             Expression = expression;
         }

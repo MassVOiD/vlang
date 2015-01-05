@@ -24,7 +24,7 @@ namespace VLang.AST.Elements
             res = context.InteropManager.GetTypeByName(Identifier);
             if (res != null) return res;
             if (context.InteropManager.DoesUseNamesace(Identifier)) return new InteropManager.NamespaceInfo(Identifier);
-            if (context.EvaluationStack.Count == 0)
+            if (context.EvaluationStack == null || context.EvaluationStack.Count == 0)
             {
                 context.SetValue(Identifier, null);
                 return context.GetReference(Identifier);

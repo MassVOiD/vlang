@@ -5,9 +5,9 @@ namespace VLang.AST.Elements
 {
     internal class Return : ASTElement, IASTElement
     {
-        private Expression Expression;
+        private IASTElement Expression;
 
-        public Return(Expression expression)
+        public Return(IASTElement expression)
         {
             Expression = expression;
         }

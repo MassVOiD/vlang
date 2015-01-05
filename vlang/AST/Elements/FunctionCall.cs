@@ -7,10 +7,10 @@ namespace VLang.AST.Elements
 {
     internal class FunctionCall : ASTElement, IASTElement
     {
-        private List<Expression> Arguments;
-        private Expression Func;
+        private List<IASTElement> Arguments;
+        private IASTElement Func;
 
-        public FunctionCall(Expression func, params Expression[] arguments)
+        public FunctionCall(IASTElement func, params IASTElement[] arguments)
         {
             Func = func;
             Arguments = arguments.ToList();
@@ -61,7 +61,7 @@ namespace VLang.AST.Elements
             if (function is ICallable)
             {
                 if (Arguments.Count == 0) return ((ICallable)function).Call(context);
-                else return ((ICallable)function).Call(context, Arguments.Select<Expression, object>(a => a.GetValue(context)).ToArray());
+                else return ((ICallable)function).Call(context, Arguments.Select<IASTElement, object>(a => a.GetValue(context)).ToArray());
             }
             else
             {
@@ -77,7 +77,7 @@ namespace VLang.AST.Elements
         public override string ToJSON()
         {
             string Name = Func.ToJSON();
-            return String.Format("FunctionCall({0}{{{1}}})", Name, String.Join(",", Arguments.Select<Expression, string>(a => a.ToJSON())));
+            return String.Format("FunctionCall({0}{{{1}}})", Name, String.Join(",", Arguments.Select<IASTElement, string>(a => a.ToJSON())));
         }
     }
 }

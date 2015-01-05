@@ -13,10 +13,24 @@ namespace VLang
 
         public Engine()
         {
-            Interop = new InteropManager();
+            Interop = new InteropManager(true);
             Context = new ExecutionContext();
             Context.SetInteropManager(Interop);
         }
+
+        public Engine(string[] imports)
+        {
+            Interop = new InteropManager(imports);
+            Context = new ExecutionContext();
+            Context.SetInteropManager(Interop);
+        }
+        public Engine(System.Reflection.Assembly[] imports)
+        {
+            Interop = new InteropManager(imports);
+            Context = new ExecutionContext();
+            Context.SetInteropManager(Interop);
+        }
+
         public static Dictionary<int, ASTNode> Groups;
 
         public void SetGroups(Dictionary<int, ASTNode> g)
