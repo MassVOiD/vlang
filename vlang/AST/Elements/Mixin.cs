@@ -5,7 +5,7 @@ namespace VLang.AST.Elements
 {
     internal class Mixin : ASTElement, IASTElement
     {
-        private IASTElement Expression;
+        public IASTElement Expression;
 
         public Mixin(IASTElement expression)
         {
@@ -19,7 +19,7 @@ namespace VLang.AST.Elements
 
         public override string ToJSON()
         {
-            return String.Format("Return({0})", Expression.ToJSON());
+            return String.Format("mixin {0}", Expression.ToJSON());
         }
     }
 }

@@ -5,7 +5,7 @@ namespace VLang.AST.Elements
 {
     internal class Return : ASTElement, IASTElement
     {
-        private IASTElement Expression;
+        public IASTElement Expression;
 
         public Return(IASTElement expression)
         {
@@ -19,7 +19,7 @@ namespace VLang.AST.Elements
 
         public override string ToJSON()
         {
-            return String.Format("Return({0})", Expression.ToJSON());
+            return String.Format("return {0}", Expression.ToJSON());
         }
     }
 }

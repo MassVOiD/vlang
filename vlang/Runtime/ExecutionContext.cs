@@ -1,23 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System;
 using VLang.AST;
 
 namespace VLang.Runtime
 {
     public class ExecutionContext
     {
-        private Dictionary<string, Variable> Fields;
-        private List<ExecutionContext> SearchPath;
-        private Dictionary<int, ASTNode> Groups;
         public InteropManager InteropManager;
-        private Stack<object> RealEvaluationStack;
-        public Stack<object> EvaluationStack { 
-            get{
-                return Root.RealEvaluationStack;
-            }
-        }
         public ExecutionContext Root;
+        private Dictionary<string, Variable> Fields;
+        private Dictionary<int, ASTNode> Groups;
+        private Stack<object> RealEvaluationStack;
+        private List<ExecutionContext> SearchPath;
 
         public ExecutionContext(params ExecutionContext[] parents)
         {
@@ -31,23 +26,28 @@ namespace VLang.Runtime
             {
                 Root = parents.First(a => a.Root != null);
             }
-            
         }
 
-        public void UpdateEvaluationStack(AST.Elements.Expression expression)
+        public Stack<object> EvaluationStack
         {
-            if (RealEvaluationStack == null) RealEvaluationStack = new Stack<object>();
-            while (expression.Stack.Count != 0) Root.EvaluationStack.Push(expression.Stack.Pop());
+            get
+            {
+                return Root.RealEvaluationStack;
+            }
         }
 
-        public void SetInteropManager(InteropManager im)
+        public bool Exists(string name)
         {
-            InteropManager = im;
-        }
-
-        public void SetGroups(Dictionary<int, ASTNode> g)
-        {
-            Groups = g;
+            var value = Fields.Where(a => a.Key == name);
+            if (value == null || value.Count() == 0)
+            {
+                foreach (var context in SearchPath)
+                {
+                    var tmp = context.GetValue(name);
+                    if (tmp != null) return true;
+                }
+            }
+            return value.Count() != 0;
         }
 
         public ASTNode GetGroup(int gid)
@@ -66,20 +66,6 @@ namespace VLang.Runtime
                 }
             }
             return null;
-        }
-
-        public bool Exists(string name)
-        {
-            var value = Fields.Where(a => a.Key == name);
-            if (value == null || value.Count() == 0)
-            {
-                foreach (var context in SearchPath)
-                {
-                    var tmp = context.GetValue(name);
-                    if (tmp != null) return true;
-                }
-            }
-            return value.Count() != 0;
         }
 
         public Variable GetReference(string name)
@@ -104,8 +90,8 @@ namespace VLang.Runtime
 
         public object GetValue(string name, bool dontThrowIfNotFound = false, object defaultValue = null)
         {
-            var value = Fields.Where(a => a.Key == name);
-            if (value == null || value.Count() == 0)
+            var value = Fields.ContainsKey(name) ? Fields[name] : (object)new NotFoundFieldObjectStub();
+            if (value is NotFoundFieldObjectStub)
             {
                 foreach (var context in SearchPath)
                 {
@@ -113,9 +99,19 @@ namespace VLang.Runtime
                     if (tmp != null) return tmp;
                 }
             }
-            if (value.Count() == 0 && dontThrowIfNotFound) return defaultValue;
-            else if (!dontThrowIfNotFound && value.Count() == 0) throw new Exception("Field not found");
-            return value.First().Value.Value;
+            if (value is NotFoundFieldObjectStub && dontThrowIfNotFound) return defaultValue;
+            else if (!dontThrowIfNotFound && value is NotFoundFieldObjectStub) throw new Exception("Field not found");
+            return ((Variable)value).Value;
+        }
+
+        public void SetGroups(Dictionary<int, ASTNode> g)
+        {
+            Groups = g;
+        }
+
+        public void SetInteropManager(InteropManager im)
+        {
+            InteropManager = im;
         }
 
         public void SetValue(string name, object value)
@@ -129,5 +125,15 @@ namespace VLang.Runtime
                 Fields.Add(name, new Variable(value));
             }
         }
+
+        public void UpdateEvaluationStack(AST.Elements.Expression expression)
+        {
+            if (RealEvaluationStack == null) RealEvaluationStack = new Stack<object>();
+            var tmp = expression.Stack.ToList();
+            tmp.Reverse();
+            foreach (var obj in tmp) Root.EvaluationStack.Push(obj);
+        }
+
+        private class NotFoundFieldObjectStub { }
     }
 }

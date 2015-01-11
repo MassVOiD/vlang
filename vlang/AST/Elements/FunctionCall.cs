@@ -7,48 +7,13 @@ namespace VLang.AST.Elements
 {
     internal class FunctionCall : ASTElement, IASTElement
     {
-        private List<IASTElement> Arguments;
-        private IASTElement Func;
+        public List<IASTElement> Arguments;
+        public IASTElement Func;
 
         public FunctionCall(IASTElement func, params IASTElement[] arguments)
         {
             Func = func;
             Arguments = arguments.ToList();
-        }
-
-        object ReflectionWiseCall(string name, ExecutionContext context)
-        {
-            object obj = context.EvaluationStack.Pop();
-            if (Arguments.Count == 0)
-            {
-                if (obj is Type) return new ReflectionMethod(((Type)obj), name).Call(context);
-                else return new ReflectionMethod(context.EvaluationStack.Pop(), name).Call(context);
-            }
-            else
-            {
-                if (obj is Type) return new ReflectionMethod(((Type)obj), name).Call(context);
-                else return new ReflectionMethod(context.EvaluationStack.Pop(), name).Call(context);
-            }
-        }
-
-        bool ReflectionWiseVoidCheck(string name, ExecutionContext context)
-        {
-            if (name.Contains('.'))
-            {
-                string[] parts = name.Split('.');
-                object test = context.GetValue(parts[0], true);
-                if (test != null)
-                {
-                    return new ReflectionMethod(test, parts[1]).IsVoid();
-                }
-                else
-                {
-                    Type val = context.InteropManager.GetTypeByName(parts[0]);
-                    return new ReflectionMethod(val, parts[1]).IsVoid();
-                    
-                }
-            }
-            throw new Exception("Method not found");
         }
 
         public object GetValue(ExecutionContext context)
@@ -77,7 +42,41 @@ namespace VLang.AST.Elements
         public override string ToJSON()
         {
             string Name = Func.ToJSON();
-            return String.Format("FunctionCall({0}{{{1}}})", Name, String.Join(",", Arguments.Select<IASTElement, string>(a => a.ToJSON())));
+            return String.Format("{0}({1})", Name, String.Join(",", Arguments.Select<IASTElement, string>(a => a.ToJSON())));
+        }
+
+        private object ReflectionWiseCall(string name, ExecutionContext context)
+        {
+            object obj = context.EvaluationStack.Pop();
+            if (Arguments.Count == 0)
+            {
+                if (obj is Type) return new ReflectionMethod(((Type)obj), name).Call(context);
+                else return new ReflectionMethod(context.EvaluationStack.Pop(), name).Call(context);
+            }
+            else
+            {
+                if (obj is Type) return new ReflectionMethod(((Type)obj), name).Call(context);
+                else return new ReflectionMethod(context.EvaluationStack.Pop(), name).Call(context);
+            }
+        }
+
+        private bool ReflectionWiseVoidCheck(string name, ExecutionContext context)
+        {
+            if (name.Contains('.'))
+            {
+                string[] parts = name.Split('.');
+                object test = context.GetValue(parts[0], true);
+                if (test != null)
+                {
+                    return new ReflectionMethod(test, parts[1]).IsVoid();
+                }
+                else
+                {
+                    Type val = context.InteropManager.GetTypeByName(parts[0]);
+                    return new ReflectionMethod(val, parts[1]).IsVoid();
+                }
+            }
+            throw new Exception("Method not found");
         }
     }
 }

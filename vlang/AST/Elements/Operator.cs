@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Linq;
 using VLang.Runtime;
 
 namespace VLang.AST.Elements
 {
     internal class Operator : ASTElement, IASTElement
     {
-        private int ArgumentsCount;
+        public int ArgumentsCount;
 
-        private Operators Type;
+        public Operators Type;
 
         public Operator(Operators op, int argumentsCount)
         {
@@ -69,7 +70,7 @@ namespace VLang.AST.Elements
 
         public override string ToJSON()
         {
-            return String.Format("Operator({0})", Type.ToString());
+            return String.Format("{0}", Frontends.DefaultFrontend.StringMap.First(a => a.Value == Type).Key);
         }
     }
 }

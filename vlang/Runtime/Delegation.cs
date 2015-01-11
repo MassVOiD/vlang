@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 
 namespace VLang.Runtime
 {
-    public  class Delegation : ICallable
+    public class Delegation : ICallable
     {
         private Delegate callback;
 
@@ -12,7 +11,7 @@ namespace VLang.Runtime
         {
             this.callback = callback;
         }
-       
+
         public object Call(ExecutionContext context)
         {
             return Call(new object[0]);
@@ -27,7 +26,7 @@ namespace VLang.Runtime
         {
             return callback.GetMethodInfo().ReturnType == typeof(void);
         }
-        
+
         private object Call(object[] arguments)
         {
             return callback.DynamicInvoke(arguments);

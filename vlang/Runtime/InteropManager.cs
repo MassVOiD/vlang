@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Microsoft.CSharp;
+using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.CodeDom.Compiler;
-using Microsoft.CSharp;
 
 namespace VLang.Runtime
 {
@@ -11,12 +11,12 @@ namespace VLang.Runtime
     {
         private List<Assembly> assemblies = new List<Assembly>();
         private Assembly assembly;
+        private CSharpCodeProvider compiler = new CSharpCodeProvider();
         private List<MethodInfo> methods = new List<MethodInfo>();
         private List<String> namespaces = new List<String>();
         private String netruntime = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
         private Type[] types;
         private List<Type> Types = new List<Type>();
-        private CSharpCodeProvider compiler = new CSharpCodeProvider();
 
         public InteropManager(bool importAllReferenced)
         {
@@ -27,6 +27,7 @@ namespace VLang.Runtime
             netruntime = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
             if (importAllReferenced) ImportAllReferencesAssemblies();
         }
+
         public InteropManager(string[] imports = null)
         {
             assemblies = new List<Assembly>();
@@ -39,6 +40,7 @@ namespace VLang.Runtime
                 foreach (var a in imports) ImportAssembly(a);
             }
         }
+
         public InteropManager(Assembly[] imports = null)
         {
             assemblies = new List<Assembly>();
@@ -55,39 +57,6 @@ namespace VLang.Runtime
         public bool ContainsType(Type type)
         {
             return Types.Contains(type);
-        }
-
-        public bool DoesUseNamesace(string np)
-        {
-            return namespaces.Contains(np);
-        }
-
-        public void ImportAllReferencesAssemblies()
-        {
-            var refs = Assembly.GetExecutingAssembly().GetReferencedAssemblies().Select<AssemblyName, string>(a => a.Name + ".dll");
-            ImportAssembly(Assembly.GetExecutingAssembly());
-            ImportAssembly(Assembly.GetCallingAssembly());
-            ImportAssembly(Assembly.GetEntryAssembly());
-            foreach (var r in refs) ImportAssembly(r);
-        }
-
-        public object ExecuteChain(string value, Dictionary<string, object> bindings)
-        {
-            string arglist = string.Join(", ", bindings.Select<KeyValuePair<string, object>, string>(a => a.Value.GetType().FullName + " " + a.Key));
-            string code = string.Format(@"namespace VLang.Runtime.Eval{{ public static class InteropInternalEvaluator {{ public static object Evaluate({0}) {{ return {1}; }} }} }}", arglist, value);
-            var name = "F" + Guid.NewGuid().ToString().Replace("-", string.Empty);
-
-            var parameters = new CompilerParameters(assemblies.Select<Assembly, string>(a => a.GetName().Name + ".dll").ToArray())
-            {
-                GenerateInMemory = true
-            };
-
-            var compilerResult = compiler.CompileAssemblyFromSource(parameters, code);
-            var compiledAssembly = compilerResult.CompiledAssembly;
-            var type = compiledAssembly.GetType("VLang.Runtime.Eval.InteropInternalEvaluator");
-            var method = type.GetMethod("Eval");
-            object result = method.Invoke(null, bindings.Values.ToArray());
-            return result;
         }
 
         public object CreateInstance(string name, object[] args)
@@ -122,6 +91,30 @@ namespace VLang.Runtime
             }
 
             return constructor.Invoke(args);
+        }
+
+        public bool DoesUseNamesace(string np)
+        {
+            return namespaces.Contains(np);
+        }
+
+        public object ExecuteChain(string value, Dictionary<string, object> bindings)
+        {
+            string arglist = string.Join(", ", bindings.Select<KeyValuePair<string, object>, string>(a => a.Value.GetType().FullName + " " + a.Key));
+            string code = string.Format(@"namespace VLang.Runtime.Eval{{ public static class InteropInternalEvaluator {{ public static object Evaluate({0}) {{ return {1}; }} }} }}", arglist, value);
+            var name = "F" + Guid.NewGuid().ToString().Replace("-", string.Empty);
+
+            var parameters = new CompilerParameters(assemblies.Select<Assembly, string>(a => a.GetName().Name + ".dll").ToArray())
+            {
+                GenerateInMemory = true
+            };
+
+            var compilerResult = compiler.CompileAssemblyFromSource(parameters, code);
+            var compiledAssembly = compilerResult.CompiledAssembly;
+            var type = compiledAssembly.GetType("VLang.Runtime.Eval.InteropInternalEvaluator");
+            var method = type.GetMethod("Eval");
+            object result = method.Invoke(null, bindings.Values.ToArray());
+            return result;
         }
 
         public object Extract(object instance, string search)
@@ -163,6 +156,7 @@ namespace VLang.Runtime
 
             return null;
         }
+
         public object ExtractReference(object instance, string search)
         {
             object root = instance, current = root;
@@ -186,7 +180,6 @@ namespace VLang.Runtime
 
             current = type.GetMember(search, bflags).First();
             if (current != null) return current;
-
 
             return null;
         }
@@ -350,6 +343,15 @@ namespace VLang.Runtime
                     parsedTypeName = String.Concat("System.Nullable`1[", parsedTypeName, "]");
             }
             return Type.GetType(parsedTypeName);
+        }
+
+        public void ImportAllReferencesAssemblies()
+        {
+            var refs = Assembly.GetExecutingAssembly().GetReferencedAssemblies().Select<AssemblyName, string>(a => a.Name + ".dll");
+            ImportAssembly(Assembly.GetExecutingAssembly());
+            ImportAssembly(Assembly.GetCallingAssembly());
+            ImportAssembly(Assembly.GetEntryAssembly());
+            foreach (var r in refs) ImportAssembly(r);
         }
 
         public void ImportAssembly(String name)

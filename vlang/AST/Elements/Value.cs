@@ -5,7 +5,7 @@ namespace VLang.AST.Elements
 {
     internal class Value : ASTElement, IASTElement
     {
-        private object Val;
+        public object Val;
 
         public Value(object value)
         {
@@ -16,10 +16,15 @@ namespace VLang.AST.Elements
         {
             return Val;
         }
+        public object GetValue()
+        {
+            return Val;
+        }
 
         public override string ToJSON()
         {
-            return String.Format("Value({0})", Val.ToString());
+            if(Val is string) return String.Format("'{0}'", Val.ToString());
+            else return String.Format("{0}", Val.ToString());
         }
     }
 }

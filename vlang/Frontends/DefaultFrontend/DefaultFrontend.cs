@@ -10,7 +10,7 @@ namespace VLang.Frontends
 {
     partial class DefaultFrontend : Frontend
     {
-        public Dictionary<string, VLang.AST.Elements.Operator.Operators> StringMap
+        public static Dictionary<string, VLang.AST.Elements.Operator.Operators> StringMap
             = new Dictionary<string, AST.Elements.Operator.Operators>
         {
             {"+", VLang.AST.Elements.Operator.Operators.Add},
@@ -130,7 +130,13 @@ namespace VLang.Frontends
             Using,
             New,
             Import,
-            LoadAssembly
+            LoadAssembly,
+            While,
+            Loop,
+            For,
+            Foreach,
+            Map,
+            Filter
         }
 
         public override ASTNode Parse()
@@ -153,7 +159,7 @@ namespace VLang.Frontends
                     num++;
                     Groups.Add(num, new DefaultFrontend(Script.Substring(start + 1, i - start - 1)).Parse());
                     Script = Script.Remove(start, i - start + 1);
-                    bool embedded = start < Script.Length ? Script[start] == ')' || Script.Substring(start, 5).Trim().StartsWith("else") : false;
+                    bool embedded = start + 5 < Script.Length ? Script[start] == ')' || Script.Substring(start, 5).Trim().StartsWith("else") : false;
                     string name = "_reserved_codegroup_" + num.ToString() + (embedded ? "" : ";");
                     i = start + name.Length - 1;
                     Script = Script.Insert(start, name);
@@ -173,49 +179,66 @@ namespace VLang.Frontends
                     new Value(elem.Value)
                 })));
             }
-            List<ASTNode> tokens = new List<ASTNode>();
-            StringBuilder buffer = new StringBuilder();
-            Action flushBuffer = () =>
-            {
-                string result = buffer.ToString();
-                buffer = new StringBuilder();
-                root.Add(ToRPN(result));
-            };
-            for (int i = 0; i < Script.Length; i++)
-            {
-                char c = Script[i];
-                if (c == ';')
-                {
-                    flushBuffer();
-                }
-                else
-                {
-                    buffer.Append(c);
-                }
-            }
+            Script = NormalizeBraces(Script); // crazy really
+            string[] expressions = GammaSplit(Script, ';');
+            foreach (var exp in expressions) root.Add(ToRPN(exp));
             root.SetGroups(Groups);
             return root;
         }
 
         public IASTElement ToRPN(string exp)
         {
+            string[] expressions = GammaSplit(exp, ';');
+            if (expressions.Length != 1)
+            {
+                return CreateExpression(expressions);
+            }
+            else exp = expressions[0];
+            if (Regex.IsMatch(exp, @"^_reserved_codegroup_([0-9]+)"))
+            {
+                return Groups[int.Parse(exp.Replace("_reserved_codegroup_", ""))];
+            }
             exp = exp.Trim();
             // i dont know if it will work. but it should anyway it should get back in there stipped
             // with : by formatexpression
             //if (Flatten(NormalizeBraces(exp)).Contains(":")) return new string[] { exp };
-            if (Flatten(NormalizeBraces(exp)).Contains("=") && !Flatten(NormalizeBraces(exp)).Contains("=="))
-            {
-                return CreateExpression(new string[] { exp });
-            }
             if (GetElementType(NormalizeBraces(exp)) == ElementType.AnonymousFunction)
             {
                 return CreateExpression(new string[] { exp });
             }
-            if (Flatten(NormalizeBraces(exp)).StartsWith("return "))
+            if (GetElementType(NormalizeBraces(exp)) == ElementType.While)
             {
                 return CreateExpression(new string[] { exp });
             }
-            if (Flatten(NormalizeBraces(exp)).StartsWith("using "))
+            if (GetElementType(NormalizeBraces(exp)) == ElementType.For)
+            {
+                return CreateExpression(new string[] { exp });
+            }
+            if (GetElementType(NormalizeBraces(exp)) == ElementType.Foreach)
+            {
+                return CreateExpression(new string[] { exp });
+            }
+            if (GetElementType(NormalizeBraces(exp)) == ElementType.Map)
+            {
+                return CreateExpression(new string[] { exp });
+            }
+            if (GetElementType(NormalizeBraces(exp)) == ElementType.Filter)
+            {
+                return CreateExpression(new string[] { exp });
+            }
+            if (Flatten(NormalizeBraces(exp)).StartsWith("return"))
+            {
+                return CreateExpression(new string[] { exp });
+            }
+            if (Flatten(NormalizeBraces(exp)).StartsWith("using"))
+            {
+                return CreateExpression(new string[] { exp });
+            }
+            if (Flatten(NormalizeBraces(exp)).Contains("=") && !Flatten(NormalizeBraces(exp)).Contains("=="))
+            {
+                return CreateExpression(new string[] { exp });
+            }
+            if (Flatten(NormalizeBraces(exp)).StartsWith("new"))
             {
                 return CreateExpression(new string[] { exp });
             }
@@ -228,17 +251,23 @@ namespace VLang.Frontends
 
             while (funccc.Success)
             {
-                exp = hashFunction(exp, funccc, ref stubs);
+                exp = HashFunction(exp, funccc, ref stubs);
                 funccc = Regex.Match(exp, "([A-z0-9]+)(\\()([^\\)]+)(\\))");
             }
             funccc = Regex.Match(exp, "([A-z0-9]+)(\\()(\\))");
             while (funccc.Success)
             {
-                exp = hashFunction(exp, funccc, ref stubs);
+                exp = HashFunction(exp, funccc, ref stubs);
                 funccc = Regex.Match(exp, "([A-z0-9]+)(\\()(\\))");
+            } 
+            funccc = Regex.Match(exp, "[^A-z_0-9]{1,}[0-9]+(\\.)[0-9]+[^A-z_0-9]*");
+            while (funccc.Success)
+            {
+                exp = exp.Remove(funccc.Groups[1].Index, 1).Insert(funccc.Groups[1].Index, "\x7");
+                funccc = Regex.Match(exp, "[^A-z_0-9]{1,}[0-9]+\\.[0-9]+[^A-z_0-9]*");
             }
 
-            List<string> sorted = operators.Keys.OrderByDescending(a => a.Length).ToList();
+            List<string> sorted = operators.Keys.OrderByDescending(a => a.Length).Where(a => a != ".").ToList();
             List<string> randomizer = new List<string>();
             int iter = 0;
             randomizer.AddRange
@@ -329,8 +358,36 @@ namespace VLang.Frontends
                 {
                     output[i] = output[i].Replace(stub.Key, stub.Value);
                 }
+                output[i] = output[i].Replace('\x7', '.');
             }
             return CreateExpression(output.Where(a => a != ".").ToArray());
+        }
+
+        static private string[] GammaSplit(String str, char sep)
+        {
+            if (!str.Contains('(')) return str.Split(sep);
+            Int32 bracelevel = 0, iter = 0;
+            List<Int32> indexes = new List<Int32>();
+            indexes.Add(0);
+            while (iter < str.Length)
+            {
+                if (str[iter] == '(') bracelevel++;
+                else if (str[iter] == ')') bracelevel--;
+                else if (bracelevel == 0 && str[iter] == sep) indexes.Add(iter);
+                ++iter;
+            }
+            indexes.Add(str.Length);
+            List<String> ret = new List<String>();
+            for (iter = 1; iter < indexes.Count; iter++)
+            {
+                ret.Add(
+                    str.Substring(
+                        indexes[iter - 1],
+                        indexes[iter] - indexes[iter - 1]
+                    ).TrimEnd(new char[] { sep }).TrimStart(new char[] { sep })
+                );
+            }
+            return ret.ToArray();
         }
 
         private int CountBraces(string input)
@@ -344,6 +401,29 @@ namespace VLang.Frontends
                 if (input[i] == ')') br2--;
             }
             return br1 + br2;
+        }
+
+
+        private int CountBracesNormal(string input)
+        {
+            int br2 = 0;
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (input[i] == '(') br2++;
+                if (input[i] == ')') br2--;
+            }
+            return br2;
+        }
+
+        private int CountBracesCurly(string input)
+        {
+            int br1 = 0;
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (input[i] == '{') br1++;
+                if (input[i] == '}') br1--;
+            }
+            return br1;
         }
 
         private IASTElement CreateExpression(string[] rpn)
@@ -378,28 +458,12 @@ namespace VLang.Frontends
                             string name = split[0];
                             string exp = split[1];
                             list.Add(new Assignment(ToRPN(name.Trim()), ToRPN(exp)));
-
                         }
                         break;
 
                     case ElementType.Variable:
                         {
-                            if (element.StartsWith("return "))
-                            {
-                                string expr = element.Substring(6).TrimStart();
-                                list.Add(new Return(ToRPN(expr)));
-                            }
-                            else if (element.StartsWith("using "))
-                            {
-                                string expr = element.Substring(6).TrimStart();
-                                list.Add(new Using(expr));
-                            }
-                            else if (element.StartsWith("import "))
-                            {
-                                string expr = element.Substring(6).TrimStart();
-                                list.Add(new Return(ToRPN(expr)));
-                            }
-                            else if (element.StartsWith("mixin "))
+                            if (element.StartsWith("return"))
                             {
                                 string expr = element.Substring(6).TrimStart();
                                 list.Add(new Return(ToRPN(expr)));
@@ -410,12 +474,14 @@ namespace VLang.Frontends
                             }
                         }
                         break;
+
                     case ElementType.New:
                         {
                             element = element.Substring(3).Trim();
-                            if (Flatten(element).Contains('.')) return ToRPN(element);
-
-                            IASTElement name = ToRPN(Flatten(element));
+                            IASTElement name = null; ;
+                            if (Flatten(element).Contains(").")) name = ToRPN(Flatten(element));
+                            else if (Flatten(element).Contains('.')) name = new Value(Flatten(element));
+                            else name = ToRPN(Flatten(element));
                             string[] arguments = GammaSplit(TrimBraces(CutExpression(element)), ',');
                             list.Add(new New(name, arguments.Select<string, IASTElement>(a => ToRPN(a)).ToList()));
                         }
@@ -454,6 +520,34 @@ namespace VLang.Frontends
                             string sub = Flatten(element);
                             int groupId1 = int.Parse(sub.Trim().Replace("if_reserved_codegroup_", ""));
                             list.Add(new Conditional(expr, groupId1));
+                        }
+                        break;
+
+                    case ElementType.While:
+                        {
+                            string ex = CutExpression(element);
+                            IASTElement expr = ToRPN(ex.Trim());
+                            string group = element.Replace("while(" + ex + ")", "").Trim();
+                            list.Add(new While(expr, ToRPN(group)));
+                        }
+                        break;
+                    case ElementType.For:
+                        {
+                            string expFull = CutExpression(element);
+                            string[] ex = GammaSplit(expFull, ';');
+                            IASTElement before = ToRPN(ex[0].Trim());
+                            IASTElement expr = ToRPN(ex[1].Trim());
+                            IASTElement after = ToRPN(ex[2].Trim());
+                            string group = element.Replace("for(" + expFull + ")", "").Trim();
+                            list.Add(new For(expr, before, after, ToRPN(group)));
+                        }
+                        break;
+
+                    case ElementType.Loop:
+                        {
+                            string sub = Flatten(element);
+                            int groupId1 = int.Parse(sub.Trim().Replace("loop_reserved_codegroup_", ""));
+                            list.Add(new Loop(groupId1));
                         }
                         break;
 
@@ -556,45 +650,61 @@ namespace VLang.Frontends
         {
             if (element == "false" || element == "true") return ElementType.Bool;
             element = FlattenKeepBraces(element);
+            if (element.StartsWith("return")) return ElementType.Variable;
+            else if (element.Trim().StartsWith("new")) return ElementType.New;
             if (operators.Keys.Contains(element)) return ElementType.Operator;
             if (Regex.IsMatch(element, @"[^0-7]") == false && element.StartsWith("0")) return ElementType.Octan;
             else if (Regex.IsMatch(element, @"[^0-9]") == false) return ElementType.Integer;
             else if (Regex.IsMatch(element, @"[^0-9.]") == false) return ElementType.Double;
             else if (Regex.IsMatch(element, @"[^0-9a-fA-Fx]") == false && element.StartsWith("0x")) return ElementType.Hex;
             else if (Regex.IsMatch(element, @".+?(`).+?") == true && Regex.IsMatch(element, @"[\(\)=]") == false) return ElementType.Cast;
-            else if (Regex.IsMatch(element, @"^([^=]+)(=)([^=]+)$") == true) return ElementType.Assignment;
-            else if (Regex.IsMatch(element, @"[\(\)]") == false) return ElementType.Variable;
-            else if (Regex.IsMatch(element.Replace(" ", ""), @"^if\(\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.If;
+            else if (Regex.IsMatch(element, @"[\(\)=]") == false) return ElementType.Variable;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^if\(\).+else.+$") == true) return ElementType.IfWithElse;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^if\(\).+$") == true) return ElementType.If;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^while\(\).+$") == true) return ElementType.While;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^for\(\).+$") == true) return ElementType.For;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^foreach\(\).+$") == true) return ElementType.Foreach;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^map\(\).+$") == true) return ElementType.Map;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^filter\(\).+$") == true) return ElementType.Filter;
+            else if (Regex.IsMatch(element.Replace(" ", ""), @"^loop\(\).+$") == true) return ElementType.Loop;
             else if (Regex.IsMatch(element.Replace(" ", ""), @".+\(\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.NamedFunction;
             else if (Regex.IsMatch(element.Replace(" ", ""), @"\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.AnonymousFunction;
-            else if (Regex.IsMatch(element.Replace(" ", ""), @"^if\(\)_reserved_codegroup_([0-9]+)else_reserved_codegroup_([0-9]+)$") == true) return ElementType.IfWithElse;
-            else if (element.Trim().StartsWith("new ")) return ElementType.New;
+            else if (Regex.IsMatch(element, @"^([^=]+)(=)([^=]+)$") == true) return ElementType.Assignment;
             else return ElementType.Function;
         }
 
-        private string hashFunction(string exp, Match match, ref Dictionary<String, String> stubs)
+        string HashFunction(string exp, Match match, ref Dictionary<String, String> stubs)
         {
-            int bracecount = 0, ite = match.Length;
+            if (CountBraces(exp) != 0) throw new Exception("Syntax error");
+            int bracecount = 0, ite = exp.Length - 1;
             int hashingStart = match.Index, hashingLength = match.Length;
-            while (--ite > 0)
+            while (ite >= 0)
             {
                 // reversed, keep it on mind during next ToRPN fuckage...
-                if (exp[ite] == ')') bracecount++;
+                if (exp[ite] == ')')
+                {
+                    if (bracecount == 0) hashingLength = ite;
+                    bracecount++;
+                }
                 if (exp[ite] == '(')
                 {
                     bracecount--;
                     if (bracecount == 0)
                     {
                         hashingStart = ite;
-                        hashingLength -= ite;
-                        break;
+                        hashingLength = hashingLength - ite + 1;
+                        //break;
+                        String hash = RandomHash();
+                        stubs.Add(hash, exp.Substring(hashingStart, hashingLength));
+                        exp = exp.Remove(hashingStart, hashingLength);
+                        exp = exp.Insert(hashingStart, hash);
+                        ite = ite - hashingLength + hash.Length;
                     }
                 }
+                ite--;
             }
-            String hash = RandomHash();
-            stubs.Add(hash, exp.Substring(hashingStart, hashingLength));
-            exp = exp.Remove(hashingStart, hashingLength);
-            exp = exp.Insert(hashingStart, hash);
+
+            if (CountBraces(exp) != 0) throw new Exception("Syntax parsing error");
             return exp;
         }
 
@@ -682,10 +792,15 @@ namespace VLang.Frontends
             Script = Regex.Replace(Script, "(\\/\\/)([^\\n]*)", "", RegexOptions.Singleline);
             Script = Regex.Replace(Script, "(\\/\\*[\\d\\D]*?\\*\\/)", "", RegexOptions.Multiline);
 
-            int brace_diff = CountBraces(Script);
+            int brace_diff = CountBracesCurly(Script);
             if (brace_diff != 0)
             {
-                throw new Exception("Tokenization failed: Missing braces: " + brace_diff.ToString());
+                throw new Exception("Tokenization failed: Missing {} braces: " + brace_diff.ToString());
+            }
+            brace_diff = CountBracesNormal(Script);
+            if (brace_diff != 0)
+            {
+                throw new Exception("Tokenization failed: Missing () braces: " + brace_diff.ToString());
             }
 
             Script = Regex.Replace(Script, "[\r\n\t]", "");
@@ -695,35 +810,11 @@ namespace VLang.Frontends
                 .Replace(" is ", "/is/")
                 .Replace(" implements ", "/implements/")
                 .Replace(" as ", "/as/");
+            Script = Script.Replace(" ", "");
             while (Script.IndexOf(";;") != -1) Script = Script.Replace(";;", ";");
             // now we're clean
         }
-        static private string[] GammaSplit(String str, char sep)
-        {
-            if (!str.Contains('(')) return str.Split(sep);
-            Int32 bracelevel = 0, iter = 0;
-            List<Int32> indexes = new List<Int32>();
-            indexes.Add(0);
-            while (iter < str.Length)
-            {
-                if (str[iter] == '(') bracelevel++;
-                else if (str[iter] == ')') bracelevel--;
-                else if (bracelevel == 0 && str[iter] == sep) indexes.Add(iter);
-                ++iter;
-            }
-            indexes.Add(str.Length);
-            List<String> ret = new List<String>();
-            for (iter = 1; iter < indexes.Count; iter++)
-            {
-                ret.Add(
-                    str.Substring(
-                        indexes[iter - 1],
-                        indexes[iter] - indexes[iter - 1]
-                    ).TrimEnd(new char[] { sep }).TrimStart(new char[] { sep })
-                );
-            }
-            return ret.ToArray();
-        }
+
         private String TrimBraces(String str)
         {
             String output = str;

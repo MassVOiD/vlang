@@ -6,9 +6,9 @@ namespace VLang.AST.Elements
 {
     internal class FunctionDefinition : ASTElement, IASTElement
     {
-        private string[] Arguments;
-        private int Body;
-        private string Name;
+        public string[] Arguments;
+        public int Body;
+        public string Name;
 
         public FunctionDefinition(string name, string[] args, int body)
         {
@@ -35,7 +35,7 @@ namespace VLang.AST.Elements
 
         public override string ToJSON()
         {
-            return String.Format("FunctionDefinition({0})({1}) => {{{2}}}", Name, String.Join(",", Arguments), Engine.Groups[Body].ToJSON());
+            return String.Format("{0}({1}){{{2}}}", Name, String.Join(",", Arguments), Engine.Groups[Body].ToJSON());
         }
     }
 }

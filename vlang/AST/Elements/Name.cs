@@ -12,6 +12,16 @@ namespace VLang.AST.Elements
             Identifier = name;
         }
 
+        public bool CreateifNotExists(ExecutionContext context, object value = null)
+        {
+            if (context.Exists(Identifier))
+            {
+                return false;
+            }
+            context.SetValue(Identifier, value);
+            return true;
+        }
+
         public Variable GetReference(ExecutionContext context)
         {
             return context.GetReference(Identifier);
@@ -35,7 +45,7 @@ namespace VLang.AST.Elements
 
         public override string ToJSON()
         {
-            return String.Format("Name({0})", Identifier);
+            return String.Format("{0}", Identifier);
         }
     }
 }

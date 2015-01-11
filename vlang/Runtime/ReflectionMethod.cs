@@ -4,11 +4,10 @@ using System.Reflection;
 
 namespace VLang.Runtime
 {
-    public  class ReflectionMethod : ICallable
+    public class ReflectionMethod : ICallable
     {
         private MethodInfo[] callback;
         private object reference;
-
 
         public ReflectionMethod(Object reference, string name)
         {
@@ -17,6 +16,7 @@ namespace VLang.Runtime
             this.callback = callback;
             this.reference = reference;
         }
+
         public ReflectionMethod(Type type, string name)
         {
             var callback = type.GetMethods(BindingFlags.Public | BindingFlags.Static).Where(a => a.Name == name).ToArray();

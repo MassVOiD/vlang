@@ -1,12 +1,13 @@
-﻿using VLang.AST;
+﻿using System.Collections.Generic;
+using VLang.AST;
 using VLang.Frontends;
 using VLang.Runtime;
-using System.Collections.Generic;
 
 namespace VLang
 {
     public class Engine
     {
+        public static Dictionary<int, ASTNode> Groups;
         public ExecutionContext Context;
         private Frontend Frontend;
         private InteropManager Interop;
@@ -24,19 +25,12 @@ namespace VLang
             Context = new ExecutionContext();
             Context.SetInteropManager(Interop);
         }
+
         public Engine(System.Reflection.Assembly[] imports)
         {
             Interop = new InteropManager(imports);
             Context = new ExecutionContext();
             Context.SetInteropManager(Interop);
-        }
-
-        public static Dictionary<int, ASTNode> Groups;
-
-        public void SetGroups(Dictionary<int, ASTNode> g)
-        {
-            Groups = g;
-            Context.SetGroups(Groups);
         }
 
         public ASTNode Compile(string script)
@@ -57,6 +51,12 @@ namespace VLang
         public object Execute(ASTNode node)
         {
             return node.GetValue(Context);
+        }
+
+        public void SetGroups(Dictionary<int, ASTNode> g)
+        {
+            Groups = g;
+            Context.SetGroups(Groups);
         }
     }
 }

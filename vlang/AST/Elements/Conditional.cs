@@ -5,8 +5,8 @@ namespace VLang.AST.Elements
 {
     internal class Conditional : ASTElement, IASTElement
     {
-        private IASTElement Condition;
-        private int IfNode, ElseNode;
+        public IASTElement Condition;
+        public int IfNode, ElseNode;
 
         public Conditional(IASTElement condition, int trueBranch, int falseBranch = -1)
         {
@@ -28,11 +28,11 @@ namespace VLang.AST.Elements
         {
             if (ElseNode != -1)
             {
-                return String.Format("Conditional({0})({{{1}}})else({{{2}}})", Condition.ToJSON(), Engine.Groups[IfNode].ToJSON(), Engine.Groups[ElseNode].ToJSON());
+                return String.Format("if({0}){{{1}}}else{{{2}}}", Condition.ToJSON(), Engine.Groups[IfNode].ToJSON(), Engine.Groups[ElseNode].ToJSON());
             }
             else
             {
-                return String.Format("Conditional({0})({{{1}}})", Condition.ToJSON(), Engine.Groups[IfNode].ToJSON());
+                return String.Format("if({0}){{{1}}}", Condition.ToJSON(), Engine.Groups[IfNode].ToJSON());
             }
         }
     }

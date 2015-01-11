@@ -22,11 +22,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
+    <DefineConstants>
+    </DefineConstants>
+    <ErrorReport>none</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
@@ -41,11 +42,12 @@
   <ItemGroup>
     <Compile Include="AST\ASTCreator.cs" />
     <Compile Include="AST\ASTNode.cs" />
+    <Compile Include="AST\Elements\Loop.cs" />
+    <Compile Include="AST\Elements\For.cs" />
+    <Compile Include="AST\Elements\While.cs" />
     <Compile Include="AST\Elements\FunctionDefinition.cs" />
-    <Compile Include="AST\Elements\Import.cs" />
     <Compile Include="AST\Elements\Mixin.cs" />
     <Compile Include="AST\Elements\New.cs" />
-    <Compile Include="AST\Elements\Using.cs" />
     <Compile Include="AST\Elements\Return.cs" />
     <Compile Include="AST\Elements\Value.cs" />
     <Compile Include="AST\Elements\Assignment.cs" />
