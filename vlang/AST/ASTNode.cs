@@ -55,10 +55,5 @@ namespace VLang.AST
             if (Groups != null) throw new Exception("Groups can be set only once");
             Groups = g;
         }
-
-        public string ToJSON()
-        {
-            return String.Format("{0};", String.Join(";", this.Select<IASTElement, string>(a => a.ToJSON())));
-        }
     }
 }

@@ -15,10 +15,5 @@ namespace VLang.AST.Elements
             Arguments = args;
             Body = body;
         }
-
-        public override string ToJSON()
-        {
-            return String.Format("{0}({1}){{{2}}}", Name, String.Join(",", Arguments), Engine.Groups[Body].ToJSON());
-        }
     }
 }

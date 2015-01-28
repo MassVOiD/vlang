@@ -10,10 +10,5 @@ namespace VLang.AST.Elements
         {
             Identifier = name;
         }
-
-        public override string ToJSON()
-        {
-            return String.Format("{0}", Identifier);
-        }
     }
 }

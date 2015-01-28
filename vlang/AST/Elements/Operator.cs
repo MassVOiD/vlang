@@ -56,10 +56,5 @@ namespace VLang.AST.Elements
         {
             return ArgumentsCount;
         }
-
-        public override string ToJSON()
-        {
-            return String.Format("{0}", Frontends.DefaultFrontend.StringMap.First(a => a.Value == Type).Key);
-        }
     }
 }

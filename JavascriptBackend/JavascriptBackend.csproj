@@ -4,16 +4,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{5648DECA-60B2-4407-A757-0F45C7FF9A78}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <ProjectGuid>{7FD67635-65D8-405C-8147-3FF4014E20D6}</ProjectGuid>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Tester</RootNamespace>
-    <AssemblyName>Tester</AssemblyName>
+    <RootNamespace>JavascriptBackend</RootNamespace>
+    <AssemblyName>JavascriptBackend</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -23,12 +22,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -42,24 +39,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="JavascriptBackend.cs" />
+    <Compile Include="JSBeautify.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="test.vs">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\InterpreterBackend\InterpreterBackend.csproj">
-      <Project>{f88bf507-4f33-4071-bd89-2a9202556b9a}</Project>
-      <Name>InterpreterBackend</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\JavascriptBackend\JavascriptBackend.csproj">
-      <Project>{7fd67635-65d8-405c-8147-3ff4014e20d6}</Project>
-      <Name>JavascriptBackend</Name>
-    </ProjectReference>
     <ProjectReference Include="..\vlang\vlang.csproj">
       <Project>{5e15455a-25e4-4fee-859c-69612d9a4de4}</Project>
       <Name>vlang</Name>

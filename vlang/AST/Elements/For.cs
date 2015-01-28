@@ -14,10 +14,5 @@ namespace VLang.AST.Elements
             After = after;
             Node = branch;
         }
-
-        public override string ToJSON()
-        {
-            return String.Format("for({0}, {1}, {2}){{{3}}}", Before.ToJSON(), Condition.ToJSON(), After.ToJSON(), Node.ToJSON());
-        }
     }
 }

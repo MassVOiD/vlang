@@ -3,3 +3,8 @@
 *.vspx
 bin
 obj
+/vlang.v12.suo
+/*.vsp
+/*.psess
+/*.Cache
+*.Cache

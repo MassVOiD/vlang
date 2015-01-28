@@ -8,7 +8,7 @@ using VLang.AST.Elements;
 
 namespace VLang.Frontends
 {
-    partial class DefaultFrontend : Frontend
+    public class DefaultFrontend : IFrontend
     {
         public static Dictionary<string, VLang.AST.Elements.Operator.Operators> StringMap
             = new Dictionary<string, AST.Elements.Operator.Operators>
@@ -100,8 +100,7 @@ namespace VLang.Frontends
 
         private Dictionary<string, string> StringValues;
 
-        public DefaultFrontend(string script)
-            : base(script)
+        public DefaultFrontend()
         {
             HashTable = new List<string>();
             Groups = new Dictionary<int, ASTNode>();
@@ -139,50 +138,60 @@ namespace VLang.Frontends
             Filter
         }
 
-        public override ASTNode Parse()
+        private ASTNode ParsePrivate(string script)
         {
-            HashTable = new List<string>();
             ASTNode root = new ASTNode();
 
-            StripCommentsAndWhiteSpace();
             Stack<int> braces = new Stack<int>();
             int num = 0;
-            for (int i = 0; i < Script.Length; i++)
+            for(int i = 0; i < script.Length; i++)
             {
-                if (Script[i] == '{')
+                if(script[i] == '{')
                 {
                     braces.Push(i);
                 }
-                if (Script[i] == '}')
+                if(script[i] == '}')
                 {
                     int start = braces.Pop();
                     num++;
-                    Groups.Add(num, new DefaultFrontend(Script.Substring(start + 1, i - start - 1)).Parse());
-                    Script = Script.Remove(start, i - start + 1);
-                    bool embedded = start + 5 < Script.Length ? Script[start] == ')' || Script.Substring(start, 5).Trim().StartsWith("else") : false;
+                    Groups.Add(num, ParsePrivate(script.Substring(start + 1, i - start - 1)));
+                    script = script.Remove(start, i - start + 1);
+                    bool embedded = start + 5 < script.Length ? script[start] == ')' || script.Substring(start, 5).Trim().StartsWith("else") : false;
                     string name = "_reserved_codegroup_" + num.ToString() + (embedded ? "" : ";");
                     i = start + name.Length - 1;
-                    Script = Script.Insert(start, name);
+                    script = script.Insert(start, name);
                 }
             }
-            for (int t = 0; t < Groups.Count; t++)
+            for(int t = 0; t < Groups.Count; t++)
             {
                 var inserter = new KeyValuePair<int, ASTNode>(Groups.ElementAt(t).Key, Groups.Values.ElementAt(t));
                 Groups.Remove(Groups.ElementAt(t).Key);
                 Groups.Add(inserter.Key, inserter.Value);
                 t++;
             }
-            foreach (var elem in StringValues)
+            script = NormalizeBraces(script); // crazy really
+            string[] expressions = GammaSplit(script, ';');
+            foreach(var exp in expressions)
+                root.Add(ToRPN(exp));
+            root.SetGroups(Groups);
+            return root;
+        }
+
+
+        public ASTNode Parse(string script)
+        {
+            HashTable = new List<string>();
+            script = StripCommentsAndWhiteSpace(script);
+
+            ASTNode root = ParsePrivate(script);
+
+            foreach(var elem in StringValues)
             {
-                root.Add(new VariableDeclaration("string", elem.Key, new Expression(new List<IASTElement>
+                root.Insert(0, new VariableDeclaration("string", elem.Key, new Expression(new List<IASTElement>
                 {
                     new Value(elem.Value)
                 })));
             }
-            Script = NormalizeBraces(Script); // crazy really
-            string[] expressions = GammaSplit(Script, ';');
-            foreach (var exp in expressions) root.Add(ToRPN(exp));
-            root.SetGroups(Groups);
             return root;
         }
 
@@ -234,7 +243,7 @@ namespace VLang.Frontends
             {
                 return CreateExpression(new string[] { exp });
             }
-            if (Flatten(NormalizeBraces(exp)).Contains("=") && !Flatten(NormalizeBraces(exp)).Contains("=="))
+            if(Flatten(NormalizeBraces(exp)).Contains("=") && !Flatten(NormalizeBraces(exp)).Contains("==") && !Flatten(NormalizeBraces(exp)).Contains("!="))
             {
                 return CreateExpression(new string[] { exp });
             }
@@ -360,7 +369,7 @@ namespace VLang.Frontends
                 }
                 output[i] = output[i].Replace('\x7', '.');
             }
-            return CreateExpression(output.Where(a => a != ".").ToArray());
+            return CreateExpression(output.ToArray());
         }
 
         static private string[] GammaSplit(String str, char sep)
@@ -500,8 +509,8 @@ namespace VLang.Frontends
 
                     case ElementType.Function:
                         {
-                            if(Flatten(elementNoSpaces).Contains('.'))
-                                return ToRPN(elementNoSpaces);
+                          //  if(Flatten(elementNoSpaces).Contains('.'))
+                          //      return ToRPN(elementNoSpaces);
 
                             IASTElement name = ToRPN(Flatten(elementNoSpaces));
                             string[] arguments = GammaSplit(TrimBraces(CutExpression(elementNoSpaces)), ',');
@@ -681,7 +690,8 @@ namespace VLang.Frontends
             else if (Regex.IsMatch(element.Replace(" ", ""), @"^loop\(\).+$") == true) return ElementType.Loop;
             else if (Regex.IsMatch(element.Replace(" ", ""), @".+\(\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.NamedFunction;
             else if (Regex.IsMatch(element.Replace(" ", ""), @"\)_reserved_codegroup_([0-9]+)$") == true) return ElementType.AnonymousFunction;
-            else if (Regex.IsMatch(element, @"^([^=]+)(=)([^=]+)$") == true) return ElementType.Assignment;
+            else if(Regex.IsMatch(element, @"^([^=]+)(=)([^=]+)$") == true && !element.Contains("!="))
+                return ElementType.Assignment;
             else return ElementType.Function;
         }
 
@@ -763,25 +773,25 @@ namespace VLang.Frontends
             return ret;
         }
 
-        private void StripCommentsAndWhiteSpace()
+        private string StripCommentsAndWhiteSpace(string script)
         {
-            Script = Script.Replace("\r\n", "\n");
+            script = script.Replace("\r\n", "\n");
             Int64 i = 0;
             int iter = 0, last = 0;
             bool inString = false;
             bool specialString = false;
-            while (iter < Script.Length)
+            while (iter < script.Length)
             {
-                if (Script[iter] == '\'' && !inString)
+                if (script[iter] == '\'' && !inString)
                 {
                     inString = true;
                     last = iter;
                 }
-                else if ((iter == 0 || Script[iter - 1] != '\\') && Script[iter] == '\'' && inString && !specialString)
+                else if ((iter == 0 || script[iter - 1] != '\\') && script[iter] == '\'' && inString && !specialString)
                 {
                     inString = false;
                     i++;
-                    String value = Script.Substring(last + 1, iter - last - 1);
+                    String value = script.Substring(last + 1, iter - last - 1);
                     value = value.Replace("\\\\", "\xff\xfe\0xfd");
                     value = value.Replace("\\n", "\n");
                     value = value.Replace("\\t", "\t");
@@ -793,39 +803,40 @@ namespace VLang.Frontends
 
                     StringValues.Add("__rcs" + i.ToString(), value);
 
-                    Script = Script.Remove(last, iter - last + 1);
+                    script = script.Remove(last, iter - last + 1);
                     String insertion = "__rcs" + i.ToString();
-                    Script = Script.Insert(last, "__rcs" + i.ToString());
+                    script = script.Insert(last, "__rcs" + i.ToString());
                     iter -= iter - last + insertion.Length - 1;
                 }
                 iter++;
             }
 
-            Script = Regex.Replace(Script, "(\\/\\/)([^\\n]*)", "", RegexOptions.Singleline);
-            Script = Regex.Replace(Script, "(\\/\\*[\\d\\D]*?\\*\\/)", "", RegexOptions.Multiline);
+            script = Regex.Replace(script, "(\\/\\/)([^\\n]*)", "", RegexOptions.Singleline);
+            script = Regex.Replace(script, "(\\/\\*[\\d\\D]*?\\*\\/)", "", RegexOptions.Multiline);
 
-            int brace_diff = CountBracesCurly(Script);
+            int brace_diff = CountBracesCurly(script);
             if (brace_diff != 0)
             {
                 throw new Exception("Tokenization failed: Missing {} braces: " + brace_diff.ToString());
             }
-            brace_diff = CountBracesNormal(Script);
+            brace_diff = CountBracesNormal(script);
             if (brace_diff != 0)
             {
                 throw new Exception("Tokenization failed: Missing () braces: " + brace_diff.ToString());
             }
 
-            Script = Regex.Replace(Script, "[\r\n\t]", "");
-            while (Script.IndexOf("  ") != -1) Script = Script.Replace("  ", " ");
-            Script = Script.Replace(" instance of ", "/instance/of/")
+            script = Regex.Replace(script, "[\r\n\t]", "");
+            while (script.IndexOf("  ") != -1) script = script.Replace("  ", " ");
+            script = script.Replace(" instance of ", "/instance/of/")
                 .Replace(" child of ", "/child/of/")
                 .Replace(" is ", "/is/")
                 .Replace(" implements ", "/implements/")
                 .Replace(" as ", "/as/");
-            //Script = Script.Replace(") ", "");
-            //Script = Script.Replace(" (", "");
-            while (Script.IndexOf(";;") != -1) Script = Script.Replace(";;", ";");
+            //script = script.Replace(") ", "");
+            //script = script.Replace(" (", "");
+            while (script.IndexOf(";;") != -1) script = script.Replace(";;", ";");
             // now we're clean
+            return script;
         }
 
         private String TrimBraces(String str)

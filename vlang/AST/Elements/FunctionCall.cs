@@ -15,11 +15,5 @@ namespace VLang.AST.Elements
             Arguments = arguments.ToList();
         }
 
-        public override string ToJSON()
-        {
-            string Name = Func.ToJSON();
-            return String.Format("{0}({1})", Name, String.Join(",", Arguments.Select<IASTElement, string>(a => a.ToJSON())));
-        }
-
     }
 }

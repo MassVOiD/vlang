@@ -11,9 +11,5 @@ namespace VLang.AST.Elements
             Expression = expression;
         }
 
-        public override string ToJSON()
-        {
-            return String.Format("return {0}", Expression.ToJSON());
-        }
     }
 }

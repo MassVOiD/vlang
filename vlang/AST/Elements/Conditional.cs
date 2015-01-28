@@ -13,17 +13,5 @@ namespace VLang.AST.Elements
             IfNode = trueBranch;
             ElseNode = falseBranch;
         }
-        
-        public override string ToJSON()
-        {
-            if (ElseNode != null)
-            {
-                return String.Format("if({0}){{{1}}}else{{{2}}}", Condition.ToJSON(), IfNode.ToJSON(), ElseNode.ToJSON());
-            }
-            else
-            {
-                return String.Format("if({0}){{{1}}}", Condition.ToJSON(), IfNode.ToJSON());
-            }
-        }
     }
 }

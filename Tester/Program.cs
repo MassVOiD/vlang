@@ -28,26 +28,9 @@ namespace Tester
     {
         private static void Main(string[] args)
         {
-            Engine engine = new Engine();
-            var ast = engine.Compile(System.IO.File.ReadAllText("test.vs"));
-            Console.WriteLine("Raw");
-            Console.WriteLine(new JSBeautifyLib.JSBeautify(ast.ToJSON(), new JSBeautifyLib.JSBeautifyOptions()
-            {
-                preserve_newlines = true
-            }).GetResult());
-            Console.WriteLine("Optimized");
-            ast.Optimize();
-            Console.WriteLine(new JSBeautifyLib.JSBeautify(ast.ToJSON(), new JSBeautifyLib.JSBeautifyOptions()
-            {
-                preserve_newlines = true
-            }).GetResult());
-            Console.Read();
-
-            InterpreterBackend.InterpreterBackend backend = new InterpreterBackend.InterpreterBackend();
-
-            backend.SetField("print", new InterpreterBackend.Delegation(new Action<string>(a => Console.WriteLine(a))));
-
-            backend.Execute(ast);
+            Engine engine = new Engine(new VLang.Frontends.DefaultFrontend(), new JavascriptBackend.JavascriptBackend());
+            //var ast = engine.Compile(System.IO.File.ReadAllText("test.vs"));
+            Console.WriteLine(engine.Execute(System.IO.File.ReadAllText("test.vs")));
 
             Console.Read();
 

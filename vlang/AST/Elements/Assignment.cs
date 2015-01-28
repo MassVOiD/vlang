@@ -14,9 +14,5 @@ namespace VLang.AST.Elements
             Value = value;
         }
 
-        public override string ToJSON()
-        {
-            return String.Format("{0} = {1}", Target.ToJSON(), Value.ToJSON());
-        }
     }
 }

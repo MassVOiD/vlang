@@ -6,18 +6,29 @@ namespace VLang
 {
     public class Engine
     {
-        public static Dictionary<int, ASTNode> Groups;
-        private Frontend Frontend;
+        private IFrontend Frontend;
+        private IBackend Backend;
 
-        public Engine()
+        public Engine(IFrontend frontend, IBackend backend)
         {
+            Frontend = frontend;
+            Backend = backend;
         }
 
         public ASTNode Compile(string script)
         {
-            Frontend = new DefaultFrontend(script);
-            ASTNode node = Frontend.Parse();
+            Frontend = new DefaultFrontend();
+            ASTNode node = Frontend.Parse(script);
             return node;
+        }
+
+        public object Execute(ASTNode node){
+            return Backend.Execute(node);
+        }
+
+        public object Execute(string script)
+        {
+            return Execute(Compile(script));
         }
 
     }

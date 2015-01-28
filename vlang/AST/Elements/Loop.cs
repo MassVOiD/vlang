@@ -10,10 +10,5 @@ namespace VLang.AST.Elements
         {
             Node = branch;
         }
-
-        public override string ToJSON()
-        {
-            return String.Format("loop{{{1}}}", Engine.Groups[Node].ToJSON());
-        }
     }
 }

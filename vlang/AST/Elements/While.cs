@@ -12,10 +12,5 @@ namespace VLang.AST.Elements
             Condition = condition;
             Node = branch;
         }
-
-        public override string ToJSON()
-        {
-            return String.Format("while({0}){{{1}}}", Condition.ToJSON(), Node.ToJSON());
-        }
     }
 }

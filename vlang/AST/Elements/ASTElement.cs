@@ -2,6 +2,5 @@
 {
     public abstract class ASTElement
     {
-        public abstract string ToJSON();
     }
 }
