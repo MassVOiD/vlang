@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace VLang.Runtime
+namespace InterpreterBackend
 {
     public class ReflectionMethod : ICallable
     {

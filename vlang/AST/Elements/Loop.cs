@@ -1,20 +1,14 @@
 ﻿using System;
-using VLang.Runtime;
 
 namespace VLang.AST.Elements
 {
-    internal class Loop : ASTElement, IASTElement
+    public class Loop : ASTElement, IASTElement
     {
         public int Node;
 
         public Loop(int branch)
         {
             Node = branch;
-        }
-
-        public object GetValue(ExecutionContext context)
-        {
-            return context.GetGroup(Node).GetValue(context);
         }
 
         public override string ToJSON()

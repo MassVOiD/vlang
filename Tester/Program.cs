@@ -1,6 +1,5 @@
 ﻿using System;
 using VLang;
-using VLang.Runtime;
 
 namespace Tester
 {
@@ -29,7 +28,7 @@ namespace Tester
     {
         private static void Main(string[] args)
         {
-            Engine engine = new Engine(new System.Reflection.Assembly[] { System.Reflection.Assembly.GetExecutingAssembly() });
+            Engine engine = new Engine();
             var ast = engine.Compile(System.IO.File.ReadAllText("test.vs"));
             Console.WriteLine("Raw");
             Console.WriteLine(new JSBeautifyLib.JSBeautify(ast.ToJSON(), new JSBeautifyLib.JSBeautifyOptions()
@@ -44,14 +43,14 @@ namespace Tester
             }).GetResult());
             Console.Read();
 
-            engine.Context.SetValue("print",
-                new Delegation(
-                    new Action<object>(
-                        (a) => Console.WriteLine(a))));
+            InterpreterBackend.InterpreterBackend backend = new InterpreterBackend.InterpreterBackend();
 
-            engine.Execute(ast);
+            backend.SetField("print", new InterpreterBackend.Delegation(new Action<string>(a => Console.WriteLine(a))));
+
+            backend.Execute(ast);
+
             Console.Read();
-            Console.Read();
+
         }
     }
 }

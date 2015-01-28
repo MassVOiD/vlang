@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Linq;
-using VLang.Runtime;
 
 namespace VLang.AST.Elements
 {
-    internal class Operator : ASTElement, IASTElement
+    public class Operator : ASTElement, IASTElement
     {
         public int ArgumentsCount;
 
@@ -56,16 +55,6 @@ namespace VLang.AST.Elements
         public int GetArgumentsCount()
         {
             return ArgumentsCount;
-        }
-
-        public object GetValue(ExecutionContext c)
-        {
-            return null;
-        }
-
-        public override bool HasValue(ExecutionContext context)
-        {
-            return false;
         }
 
         public override string ToJSON()

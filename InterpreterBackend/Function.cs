@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace VLang.Runtime
+namespace InterpreterBackend
 {
     internal class Function : ICallable
     {
@@ -39,7 +39,7 @@ namespace VLang.Runtime
                 throw new Exception("Function not found");
             }
             ExecutionContext newContext = new ExecutionContext(context);
-            return context.GetGroup(Overloads[0]).GetValue(newContext);
+            return newContext.Execute(context.GetGroup(Overloads[0]));
         }
 
         public object Call(ExecutionContext context, object[] args)
@@ -57,7 +57,7 @@ namespace VLang.Runtime
             {
                 newContext.SetValue(ArgumentNames[args.Length][i], args[i]);
             }
-            return context.GetGroup(Overloads[args.Length]).GetValue(newContext);
+            return newContext.Execute(context.GetGroup(Overloads[args.Length]));
         }
 
         public bool IsVoid()

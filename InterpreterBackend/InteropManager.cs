@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace VLang.Runtime
+namespace InterpreterBackend
 {
     public class InteropManager
     {
@@ -211,7 +211,18 @@ namespace VLang.Runtime
             {
                 type = GetTypeFromSimpleName(name);
             }
+            if(type == /*still*/ null)
+            {
+                throw new TypeNotFoundException(name);
+            }
             return type;
+        }
+
+        public class TypeNotFoundException : Exception
+        {
+            public TypeNotFoundException(string type) : base(type)
+            {
+            }
         }
 
         public Type GetTypeByName(String name, object[] args)

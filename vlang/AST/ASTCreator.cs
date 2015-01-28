@@ -12,8 +12,8 @@ namespace VLang.AST
 
         public static Value ParseFloat(string element)
         {
-            double floatout;
-            if (double.TryParse(element.Replace('.', ','), System.Globalization.NumberStyles.Float, System.Globalization.DateTimeFormatInfo.InvariantInfo, out floatout))
+            float floatout;
+            if(float.TryParse(element.Replace('.', ','), System.Globalization.NumberStyles.Float, System.Globalization.DateTimeFormatInfo.InvariantInfo, out floatout))
             {
                 return new Value(floatout);
             }
@@ -22,8 +22,8 @@ namespace VLang.AST
 
         public static Value ParseInt(string element)
         {
-            Int64 intout;
-            if (Int64.TryParse(element, out intout))
+            int intout;
+            if(int.TryParse(element, out intout))
             {
                 return new Value(intout);
             }

@@ -174,7 +174,7 @@ namespace VLang.Frontends
             }
             foreach (var elem in StringValues)
             {
-                root.Add(new Assignment(ToRPN(elem.Key), new Expression(new List<IASTElement>
+                root.Add(new VariableDeclaration("string", elem.Key, new Expression(new List<IASTElement>
                 {
                     new Value(elem.Value)
                 })));
@@ -188,7 +188,7 @@ namespace VLang.Frontends
 
         public IASTElement ToRPN(string exp)
         {
-            string[] expressions = GammaSplit(exp, ';');
+            string[] expressions = GammaSplit(exp.Trim(), ';');
             if (expressions.Length != 1)
             {
                 return CreateExpression(expressions);
@@ -306,9 +306,9 @@ namespace VLang.Frontends
 
             List<string> elems = exp.Split('\x5').ToList();
 
-            elems.RemoveAll(a => a.Length == 0);
+            elems.RemoveAll(a => a.Length == 0 || a == " ");
 
-            string previous = "";
+            string previous = null;
             bool NegateNext = false;
             int level = -1337; // elite
             foreach (string atm in elems)
@@ -326,7 +326,7 @@ namespace VLang.Frontends
                         while (rpns.Peek() != "(") output.Add(rpns.Pop());
                         rpns.Pop(); // POOPING '('
                     }
-                    else if (atm == "-" && operators.ContainsKey(previous)) //minus symbol like 1+-2
+                    else if (atm == "-" && (previous == null || operators.ContainsKey(previous))) //minus symbol like 1+-2
                     {
                         NegateNext = true;
 
@@ -429,123 +429,135 @@ namespace VLang.Frontends
         private IASTElement CreateExpression(string[] rpn)
         {
             var list = new List<IASTElement>();
-            foreach (string element2 in rpn)
+            foreach (string chane in rpn)
             {
-                string element = element2.Trim();
-                switch (GetElementType(element))
+                if(chane.Trim().Length == 0)
+                    continue;
+                string withSpaces = chane.Trim();
+                string elementNoSpaces = chane.Replace(" ", "");
+                switch(GetElementType(elementNoSpaces))
                 {
                     case ElementType.Integer:
                     case ElementType.Octan:
                     case ElementType.Hex:
-                        list.Add(ASTCreator.ParseInt(element));
+                    list.Add(ASTCreator.ParseInt(elementNoSpaces));
                         break;
 
                     case ElementType.Double:
-                        list.Add(ASTCreator.ParseFloat(element));
+                        list.Add(ASTCreator.ParseFloat(elementNoSpaces));
                         break;
 
                     case ElementType.Bool:
-                        list.Add(ASTCreator.ParseBool(element));
+                        list.Add(ASTCreator.ParseBool(elementNoSpaces));
                         break;
 
                     case ElementType.Operator:
-                        list.Add(new Operator(StringMap[element], operator_argc[element]));
+                        list.Add(new Operator(StringMap[elementNoSpaces], operator_argc[elementNoSpaces]));
                         break;
 
                     case ElementType.Assignment:
                         {
-                            string[] split = GammaSplitOne(element, '=');
+                            string[] split = GammaSplitOne(withSpaces, '=');
                             string name = split[0];
                             string exp = split[1];
-                            list.Add(new Assignment(ToRPN(name.Trim()), ToRPN(exp)));
+                            if(name.Contains(" ")){
+                                string[] split2 = GammaSplitOne(name, ' ');
+                                list.Add(new VariableDeclaration(split2[0].Trim(), split2[1].Trim(), ToRPN(exp)));
+                            } else {
+                                list.Add(new Assignment(ToRPN(name.Trim()), ToRPN(exp)));
+                            }
                         }
                         break;
 
                     case ElementType.Variable:
                         {
-                            if (element.StartsWith("return"))
+                            if(elementNoSpaces.StartsWith("return"))
                             {
-                                string expr = element.Substring(6).TrimStart();
+                                string expr = elementNoSpaces.Substring(6).TrimStart();
                                 list.Add(new Return(ToRPN(expr)));
                             }
                             else
                             {
-                                list.Add(new Name(element));
+                                list.Add(new Name(elementNoSpaces));
                             }
                         }
                         break;
 
                     case ElementType.New:
                         {
-                            element = element.Substring(3).Trim();
+                            elementNoSpaces = elementNoSpaces.Substring(3).Trim();
                             IASTElement name = null; ;
-                            if (Flatten(element).Contains(").")) name = ToRPN(Flatten(element));
-                            else if (Flatten(element).Contains('.')) name = new Value(Flatten(element));
-                            else name = ToRPN(Flatten(element));
-                            string[] arguments = GammaSplit(TrimBraces(CutExpression(element)), ',');
+                            if(Flatten(elementNoSpaces).Contains(")."))
+                                name = ToRPN(Flatten(elementNoSpaces));
+                            else if(Flatten(elementNoSpaces).Contains('.'))
+                                name = new Value(Flatten(elementNoSpaces));
+                            else
+                                name = ToRPN(Flatten(elementNoSpaces));
+                            string[] arguments = GammaSplit(TrimBraces(CutExpression(elementNoSpaces)), ',');
                             list.Add(new New(name, arguments.Select<string, IASTElement>(a => ToRPN(a)).ToList()));
                         }
                         break;
 
                     case ElementType.Function:
                         {
-                            if (Flatten(element).Contains('.')) return ToRPN(element);
+                            if(Flatten(elementNoSpaces).Contains('.'))
+                                return ToRPN(elementNoSpaces);
 
-                            IASTElement name = ToRPN(Flatten(element));
-                            string[] arguments = GammaSplit(TrimBraces(CutExpression(element)), ',');
+                            IASTElement name = ToRPN(Flatten(elementNoSpaces));
+                            string[] arguments = GammaSplit(TrimBraces(CutExpression(elementNoSpaces)), ',');
                             list.Add(new FunctionCall(name, arguments.Length == 1 && arguments[0] == "" ? new Expression[0] : arguments.Select<string, IASTElement>(a => ToRPN(a)).ToArray()));
                         }
                         break;
 
                     case ElementType.AnonymousFunction:
                         {
-                            string[] arguments = TrimBraces(CutExpression(element)).Split(',').Select(a => a.Trim()).ToArray();
-                            int groupId = int.Parse(Flatten(element).Trim().Replace("_reserved_codegroup_", ""));
-                            list.Add(new Value(new Runtime.Function(arguments.ToList(), groupId)));
+                            string[] arguments = TrimBraces(CutExpression(elementNoSpaces)).Split(',').Select(a => a.Trim()).ToArray();
+                            int groupId = int.Parse(Flatten(elementNoSpaces).Trim().Replace("_reserved_codegroup_", ""));
+                            //list.Add(new Value(new Runtime.Function(arguments.ToList(), groupId)));
                         }
                         break;
 
                     case ElementType.NamedFunction:
                         {
-                            string[] arguments = TrimBraces(CutExpression(element)).Split(',').Select(a => a.Trim()).ToArray();
-                            string name = FlattenKeepBraces(element).Split('(')[0];
-                            int groupId = int.Parse(Flatten(element).Trim().Replace(name + "_reserved_codegroup_", ""));
+                            string[] arguments = TrimBraces(CutExpression(elementNoSpaces)).Split(',').Select(a => a.Trim()).ToArray();
+                            string name = FlattenKeepBraces(elementNoSpaces).Split('(')[0];
+                            int groupId = int.Parse(Flatten(elementNoSpaces).Trim().Replace(name + "_reserved_codegroup_", ""));
                             list.Add(new FunctionDefinition(name, arguments, groupId));
                         }
                         break;
 
                     case ElementType.If:
                         {
-                            IASTElement expr = ToRPN(CutExpression(element).Trim());
-                            string sub = Flatten(element);
+                            IASTElement expr = ToRPN(CutExpression(elementNoSpaces).Trim());
+                            string sub = Flatten(elementNoSpaces);
                             int groupId1 = int.Parse(sub.Trim().Replace("if_reserved_codegroup_", ""));
-                            list.Add(new Conditional(expr, groupId1));
+                            list.Add(new Conditional(expr, Groups[groupId1]));
                         }
                         break;
 
                     case ElementType.While:
                         {
-                            string ex = CutExpression(element);
+                            string ex = CutExpression(elementNoSpaces);
                             IASTElement expr = ToRPN(ex.Trim());
-                            string group = element.Replace("while(" + ex + ")", "").Trim();
+                            string group = elementNoSpaces.Replace("while(" + ex + ")", "").Trim();
                             list.Add(new While(expr, ToRPN(group)));
                         }
                         break;
                     case ElementType.For:
                         {
-                            string expFull = CutExpression(element);
+                            string expFull = CutExpression(elementNoSpaces);
                             string[] ex = GammaSplit(expFull, ';');
                             IASTElement before = ToRPN(ex[0].Trim());
                             IASTElement expr = ToRPN(ex[1].Trim());
                             IASTElement after = ToRPN(ex[2].Trim());
-                            string group = element.Replace("for(" + expFull + ")", "").Trim();
+                            string group = elementNoSpaces.Replace("for(" + expFull + ")", "").Trim();
                             list.Add(new For(expr, before, after, ToRPN(group)));
                         }
                         break;
 
                     case ElementType.Loop:
                         {
-                            string sub = Flatten(element);
+                            string sub = Flatten(elementNoSpaces);
                             int groupId1 = int.Parse(sub.Trim().Replace("loop_reserved_codegroup_", ""));
                             list.Add(new Loop(groupId1));
                         }
@@ -553,12 +565,12 @@ namespace VLang.Frontends
 
                     case ElementType.IfWithElse:
                         {
-                            string exp = CutExpression(element);
+                            string exp = CutExpression(elementNoSpaces);
                             IASTElement expr = ToRPN(exp.Trim());
-                            string[] sub = Flatten(element.Replace(" ", "")).Split(new string[] { "else" }, 2, StringSplitOptions.RemoveEmptyEntries);
+                            string[] sub = Flatten(elementNoSpaces.Replace(" ", "")).Split(new string[] { "else" }, 2, StringSplitOptions.RemoveEmptyEntries);
                             int groupId1 = int.Parse(sub[0].Trim().Replace("if_reserved_codegroup_", ""));
                             int groupId2 = int.Parse(sub[1].Trim().Replace("_reserved_codegroup_", ""));
-                            list.Add(new Conditional(expr, groupId1, groupId2));
+                            list.Add(new Conditional(expr, Groups[groupId1], Groups[groupId2]));
                         }
                         break;
                 }
@@ -810,7 +822,8 @@ namespace VLang.Frontends
                 .Replace(" is ", "/is/")
                 .Replace(" implements ", "/implements/")
                 .Replace(" as ", "/as/");
-            Script = Script.Replace(" ", "");
+            //Script = Script.Replace(") ", "");
+            //Script = Script.Replace(" (", "");
             while (Script.IndexOf(";;") != -1) Script = Script.Replace(";;", ";");
             // now we're clean
         }

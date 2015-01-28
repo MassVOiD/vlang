@@ -1,38 +1,28 @@
 ﻿using System;
-using VLang.Runtime;
 
 namespace VLang.AST.Elements
 {
-    internal class Conditional : ASTElement, IASTElement
+    public class Conditional : ASTElement, IASTElement
     {
         public IASTElement Condition;
-        public int IfNode, ElseNode;
+        public ASTNode IfNode, ElseNode;
 
-        public Conditional(IASTElement condition, int trueBranch, int falseBranch = -1)
+        public Conditional(IASTElement condition, ASTNode trueBranch, ASTNode falseBranch = null)
         {
             Condition = condition;
             IfNode = trueBranch;
             ElseNode = falseBranch;
         }
-
-        public object GetValue(ExecutionContext context)
-        {
-            object expraw = Condition.GetValue(context);
-            bool? exp = null;
-            if (expraw is bool) exp = (bool)expraw;
-            else throw new Exception("Not boolean in conditional expression");
-            return exp.Value ? context.GetGroup(IfNode).GetValue(context) : (ElseNode != -1 ? context.GetGroup(ElseNode).GetValue(context) : null);
-        }
-
+        
         public override string ToJSON()
         {
-            if (ElseNode != -1)
+            if (ElseNode != null)
             {
-                return String.Format("if({0}){{{1}}}else{{{2}}}", Condition.ToJSON(), Engine.Groups[IfNode].ToJSON(), Engine.Groups[ElseNode].ToJSON());
+                return String.Format("if({0}){{{1}}}else{{{2}}}", Condition.ToJSON(), IfNode.ToJSON(), ElseNode.ToJSON());
             }
             else
             {
-                return String.Format("if({0}){{{1}}}", Condition.ToJSON(), Engine.Groups[IfNode].ToJSON());
+                return String.Format("if({0}){{{1}}}", Condition.ToJSON(), IfNode.ToJSON());
             }
         }
     }

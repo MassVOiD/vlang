@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using VLang.AST.Elements;
-using VLang.Runtime;
 
 namespace VLang.AST
 {
@@ -20,24 +19,6 @@ namespace VLang.AST
                 else leafs.AddRange(((Elements.Expression)branch).List);
             }
             return leafs;
-        }
-
-        public object GetValue(ExecutionContext context)
-        {
-            object result = null;
-            var newContext = new ExecutionContext(context);
-            foreach (IASTElement element in this)
-            {
-                var tmp = element.GetValue(context);
-                if (tmp != null) result = tmp;
-                if (element is Elements.Return) break;
-            }
-            return result;
-        }
-
-        public bool HasValue(ExecutionContext context)
-        {
-            return true;
         }
 
         public void Optimize()

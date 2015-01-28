@@ -1,4 +1,4 @@
-﻿namespace VLang.Runtime
+﻿namespace InterpreterBackend
 {
     internal interface ICallable
     {
