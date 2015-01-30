@@ -41,43 +41,33 @@ namespace JavascriptBackend
         };
         string revertInfixNotation(Expression exp, ASTNode root)
         {
-            var stack = new Stack<IASTElement>();
-            var sb = new System.Text.StringBuilder();
+            var output = new Stack<string>();
             foreach(var element in exp.List)
             {
+                if(!(element is Operator))
+                    output.Push(Execute(element, root));
                 if(element is Operator)
                 {
                     int argc = ((Operator)element).GetArgumentsCount();
                     string symbol = StringMap.First(a => a.Value == ((Operator)element).Type).Key;
-                    if(argc == 2 && stack.Count >= 2)
+                    if(argc == 2 && output.Count >= 2)
                     {
-                        var v1 = stack.Count != 0 ? stack.Pop() : null;
-                        var v2 = stack.Count != 0 ? stack.Pop() : null;
-                        if(v1 is Value && v2 is Value)
-                        {
-                            stack.Push(new Value(((Operator)element).Execute(new dynamic[] { ((Value)v2).Val, ((Value)v1).Val })));
-                        }
-                        else
-                        {
-                            sb.Append("(" + Execute(v2, root));
-                            sb.Append(symbol);
-                            sb.Append(Execute(v1, root) + ")");
-                        }
+                        var v1 = output.Count != 0 ? output.Pop() : null;
+                        var v2 = output.Count != 0 ? output.Pop() : null;
+                        output.Push("(" + v2 + symbol + v1 + ")");
+
                     }
-                    else if(argc == 1 && stack.Count >= 1)
+                    else if(argc == 1 && output.Count >= 1)
                     {
-                        var v1 = stack.Count != 0 ? stack.Pop() : null;
-                        sb.Append(symbol);
-                        sb.Append(Execute(v1, root));
+                        var v1 = output.Count != 0 ? output.Pop() : null;
+                        output.Push("(" + symbol + v1 + ")");
                     }
                     //while(!(stack.Peek() is Operator)) sb.Append(stack.Pop().ToJSON());
                 }
-                else
-                    stack.Push(element);
             }
-            while(stack.Count != 0)
-                sb.Append(Execute(stack.Pop(), root));
-            return sb.ToString();
+           // while(stack.Count != 0)
+                //sb.Append(Execute(stack.Pop(), root));
+            return output.Count > 0 ? output.Pop() : "";
         }
 
         public object Execute(ASTNode node)
@@ -111,7 +101,7 @@ namespace JavascriptBackend
 
             if(leaf is Assignment)
             {
-                builder.Append(String.Format("{0} = {1}", Execute(((Assignment)leaf).Target, root), 
+                builder.Append(String.Format("{0} = {1}", Execute(((Assignment)leaf).Target, root),
                     Execute(((Assignment)leaf).Value, root)));
             }
 
@@ -119,8 +109,10 @@ namespace JavascriptBackend
             {
                 builder.Append(
                     String.Format(
-                        "var {0} = {1}", 
-                        ((VariableDeclaration)leaf).Target, 
+                        "{0} {1} {2} = {3}",
+                        String.Join(" ", ((VariableDeclaration)leaf).Modifiers),
+                        ((VariableDeclaration)leaf).TypeName,
+                        ((VariableDeclaration)leaf).Target,
                         Execute(((VariableDeclaration)leaf).Value, root)));
             }
 
@@ -128,7 +120,7 @@ namespace JavascriptBackend
             {
                 if(((Conditional)leaf).ElseNode != null)
                 {
-                    builder.Append(String.Format("if({0}){{{1}}}else{{{2}}}", Execute(((Conditional)leaf).Condition, root), 
+                    builder.Append(String.Format("if({0}){{{1}}}else{{{2}}}", Execute(((Conditional)leaf).Condition, root),
                         Execute(((Conditional)leaf).IfNode, root), Execute(((Conditional)leaf).ElseNode, root)));
                 }
                 else
@@ -136,26 +128,28 @@ namespace JavascriptBackend
                     builder.Append(String.Format("if({0}){{{1}}}", Execute(((Conditional)leaf).Condition, root), Execute(((Conditional)leaf).IfNode, root)));
                 }
             }
-            
+
             if(leaf is Value)
             {
                 object Val = ((Value)leaf).Val;
                 if(Val is string)
                 {
                     builder.Append(String.Format("'{0}'", Val.ToString()));
-                }else
-                if(Val is float)
-                {
-                    builder.Append(String.Format("{0}", ((float)Val).ToString().Replace(',', '.')));
-                }else 
-                if(Val is double)
-                {
-                    builder.Append(String.Format("{0}", ((double)Val).ToString().Replace(',', '.')));
                 }
                 else
-                {
-                    builder.Append(String.Format("{0}", Val.ToString()));
-                }
+                    if(Val is float)
+                    {
+                        builder.Append(String.Format("{0}", ((float)Val).ToString().Replace(',', '.')));
+                    }
+                    else
+                        if(Val is double)
+                        {
+                            builder.Append(String.Format("{0}", ((double)Val).ToString().Replace(',', '.')));
+                        }
+                        else
+                        {
+                            builder.Append(String.Format("{0}", Val == null ? "null" : Val.ToString()));
+                        }
             }
             if(leaf is Name)
             {
@@ -174,7 +168,7 @@ namespace JavascriptBackend
 
             if(leaf is Loop)
             {
-                builder.Append( String.Format("while(true){{{1}}}", Execute(root.Groups[((Loop)leaf).Node], root)));
+                builder.Append(String.Format("while(true){{{1}}}", Execute(root.Groups[((Loop)leaf).Node], root)));
             }
             if(leaf is Mixin)
             {
@@ -190,12 +184,13 @@ namespace JavascriptBackend
             if(leaf is FunctionCall)
             {
                 string Name = Execute(((FunctionCall)leaf).Func, root);
-                builder.Append(String.Format("{0}({1})", Name, 
+                builder.Append(String.Format("{0}({1})", Name,
                     String.Join(",", ((FunctionCall)leaf).Arguments.Select<IASTElement, string>(a => Execute(a, root)))));
             }
             if(leaf is FunctionDefinition)
             {
-                builder.Append(String.Format("{0}({1}){{{2}}}", ((FunctionDefinition)leaf).Name,
+                builder.Append(String.Format("{0} {1}({2}){{{3}}}", String.Join(" ", ((FunctionDefinition)leaf).Modificators),
+                    ((FunctionDefinition)leaf).Name,
                     String.Join(",", ((FunctionDefinition)leaf).Arguments), Execute(root.Groups[((FunctionDefinition)leaf).Body], root)));
             }
             return builder.ToString();

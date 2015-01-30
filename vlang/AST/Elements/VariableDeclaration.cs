@@ -7,12 +7,14 @@ namespace VLang.AST.Elements
     {
         public string TypeName;
         public string Target;
+        public string[] Modifiers;
         public IASTElement Value;
 
-        public VariableDeclaration(string type, string target, IASTElement value)
+        public VariableDeclaration(string type, string[] modifiers, string target, IASTElement value)
         {
             TypeName = type;
             Target = target;
+            Modifiers = modifiers;
             Value = value;
         }
     }

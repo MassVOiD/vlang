@@ -29,8 +29,9 @@ namespace Tester
         private static void Main(string[] args)
         {
             Engine engine = new Engine(new VLang.Frontends.DefaultFrontend(), new JavascriptBackend.JavascriptBackend());
-            //var ast = engine.Compile(System.IO.File.ReadAllText("test.vs"));
-            Console.WriteLine(engine.Execute(System.IO.File.ReadAllText("test.vs")));
+            var ast = engine.Compile(System.IO.File.ReadAllText("test.vs"));
+            ast.Optimize();
+            Console.WriteLine(engine.Execute(ast));
 
             Console.Read();
 
