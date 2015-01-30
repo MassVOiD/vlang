@@ -9,7 +9,7 @@ using VLang.AST.Elements;
 
 namespace InterpreterBackend
 {
-    public class InterpreterBackend
+    public class InterpreterBackend : VLang.Frontends.IBackend
     {
         InteropManager Interop;
         ExecutionContext RootContext;
@@ -32,9 +32,9 @@ namespace InterpreterBackend
             }
         }
 
-        public void Execute(ASTNode node)
+        public object Execute(ASTNode node)
         {
-            RootContext.Execute(node);
+            return RootContext.Execute(node);
         }
     }
 }
